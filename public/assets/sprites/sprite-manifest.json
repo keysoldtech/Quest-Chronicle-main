@@ -1,0 +1,431 @@
+{
+  "player": {
+    "barbarian": {
+      "1x": "/assets/sprites/barbarian.png",
+      "2x": "/assets/sprites/barbarian.png"
+    },
+    "cleric": {
+      "1x": "/assets/sprites/cleric.png",
+      "2x": "/assets/sprites/cleric.png"
+    },
+    "mage": {
+      "1x": "/assets/sprites/mage.png",
+      "2x": "/assets/sprites/mage.png"
+    },
+    "ranger": {
+      "1x": "/assets/sprites/ranger.png",
+      "2x": "/assets/sprites/ranger.png"
+    },
+    "rogue": {
+      "1x": "/assets/sprites/rogue.png",
+      "2x": "/assets/sprites/rogue.png"
+    },
+    "warrior": {
+      "1x": "/assets/sprites/warrior.png",
+      "2x": "/assets/sprites/warrior.png"
+    }
+  },
+  "monster": {
+    "monster": {
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Monster Sprites/Basic 1x.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Monster Sprites/Basic 2x.png",
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Monster Sprites/Basic 4x.png"
+    },
+    "undead": {
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Undead Sprites/Basic Undead 1x.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Undead Sprites/Basic Undead 2x.png",
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Undead Sprites/Basic Undead 4x.png"
+    },
+    "magical": {
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/basic magical sprites/Basic 1x.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/basic magical sprites/Basic 2x.png",
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/basic magical sprites/Basic 4x.png"
+    },
+    "animal": {
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Animal Sprites/Basic Sprites 1x.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Animal Sprites/Basic Sprites 2x.png",
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Animal Sprites/Basic Sprites 4x.png"
+    },
+    "holy": {
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Holy Sprites/Basic Holy 1x.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Holy Sprites/Basic Holy 2x.png",
+      "3x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Holy Sprites/Basic Holy 3x.png"
+    },
+    "vermin": {
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Vermin Sprites/Basic Vermin 1x.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Vermin Sprites/Basic Vermin 2x.png",
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Vermin Sprites/Basic Vermin 4x.png"
+    },
+    "blinded-grimlock": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Monster Animations/Blinded Grimlock/BlindedGrimlock.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Monster Animations/Blinded Grimlock/BlindedGrimlock.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Monster Animations/Blinded Grimlock/BlindedGrimlock.png"
+    },
+    "bloodshot-eye": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Monster Animations/Bloodshot Eye/BloodshotEye.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Monster Animations/Bloodshot Eye/BloodshotEye.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Monster Animations/Bloodshot Eye/BloodshotEye.png"
+    },
+    "brawny-ogre": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Monster Animations/Brawny Ogre/BrawnyOgre.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Monster Animations/Brawny Ogre/BrawnyOgre.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Monster Animations/Brawny Ogre/BrawnyOgre.png"
+    },
+    "crimson-slaad": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Monster Animations/Crimson Slaad/CrimsonSlaad.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Monster Animations/Crimson Slaad/CrimsonSlaad.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Monster Animations/Crimson Slaad/CrimsonSlaad.png"
+    },
+    "crushing-cyclops": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Monster Animations/Crushing Cyclops/CrushingCyclops.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Monster Animations/Crushing Cyclops/CrushingCyclops.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Monster Animations/Crushing Cyclops/CrushingCyclops.png"
+    },
+    "death-slime": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Monster Animations/Death Slime/DeathSlime.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Monster Animations/Death Slime/DeathSlime.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Monster Animations/Death Slime/DeathSlime.png"
+    },
+    "fungal-myconid": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Monster Animations/Fungal Myconid/FungalMyconid.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Monster Animations/Fungal Myconid/FungalMyconid.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Monster Animations/Fungal Myconid/FungalMyconid.png"
+    },
+    "humongous-ettin": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Monster Animations/Humongous Ettin/HumongousEttin.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Monster Animations/Humongous Ettin/HumongousEttin.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Monster Animations/Humongous Ettin/HumongousEttin.png"
+    },
+    "murky-slaad": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Monster Animations/Murky Slaad/MurkySlaad.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Monster Animations/Murky Slaad/MurkySlaad.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Monster Animations/Murky Slaad/MurkySlaad.png"
+    },
+    "ochre-jelly": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Monster Animations/Ochre Jelly/OchreJelly.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Monster Animations/Ochre Jelly/OchreJelly.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Monster Animations/Ochre Jelly/OchreJelly.png"
+    },
+    "ocular-watcher": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Monster Animations/Ocular Watcher/OcularWatcher.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Monster Animations/Ocular Watcher/OcularWatcher.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Monster Animations/Ocular Watcher/OcularWatcher.png"
+    },
+    "red-cap": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Monster Animations/Red Cap/RedCap.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Monster Animations/Red Cap/RedCap.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Monster Animations/Red Cap/RedCap.png"
+    },
+    "shrieker-mushroom": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Monster Animations/Shrieker Mushroom/ShriekerMushroom.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Monster Animations/Shrieker Mushroom/ShriekerMushroom.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Monster Animations/Shrieker Mushroom/ShriekerMushroom.png"
+    },
+    "stone-troll": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Monster Animations/Stone Troll/StoneTroll.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Monster Animations/Stone Troll/StoneTroll.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Monster Animations/Stone Troll/StoneTroll.png"
+    },
+    "swamp-troll": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Monster Animations/Swamp Troll/SwampTroll.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Monster Animations/Swamp Troll/SwampTroll.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Monster Animations/Swamp Troll/SwampTroll.png"
+    },
+    "bound-cadaver": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Undead Animations/Bound Cadaver/BoundCadaver.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Undead Animations/Bound Cadaver/BoundCadaver.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Undead Animations/Bound Cadaver/BoundCadaver.png"
+    },
+    "brittle-archer": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Undead Animations/Brittle Archer/BrittleArcher.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Undead Animations/Brittle Archer/BrittleArcher.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Undead Animations/Brittle Archer/BrittleArcher.png"
+    },
+    "carcass-feeder": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Undead Animations/Carcass Feeder/CarcassFeeder.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Undead Animations/Carcass Feeder/CarcassFeeder.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Undead Animations/Carcass Feeder/CarcassFeeder.png"
+    },
+    "decrepit-bones": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Undead Animations/Decrepit Bones/DecrepitBones.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Undead Animations/Decrepit Bones/DecrepitBones.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Undead Animations/Decrepit Bones/DecrepitBones.png"
+    },
+    "dismembered-crawler": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Undead Animations/Dismembered Crawler/DismemberedCrawler.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Undead Animations/Dismembered Crawler/DismemberedCrawler.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Undead Animations/Dismembered Crawler/DismemberedCrawler.png"
+    },
+    "ghastly-eye": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Undead Animations/Ghastly Eye/GhastlyEye.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Undead Animations/Ghastly Eye/GhastlyEye.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Undead Animations/Ghastly Eye/GhastlyEye.png"
+    },
+    "giant-royal-scarab": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Undead Animations/Giant Royal Scarab/GiantRoyalScarab.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Undead Animations/Giant Royal Scarab/GiantRoyalScarab.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Undead Animations/Giant Royal Scarab/GiantRoyalScarab.png"
+    },
+    "grave-revenant": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Undead Animations/Grave Revenant/GraveRevenant.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Undead Animations/Grave Revenant/GraveRevenant.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Undead Animations/Grave Revenant/GraveRevenant.png"
+    },
+    "mutilated-stumbler": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Undead Animations/Mutilated Stumbler/MutilatedStumbler.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Undead Animations/Mutilated Stumbler/MutilatedStumbler.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Undead Animations/Mutilated Stumbler/MutilatedStumbler.png"
+    },
+    "royal-scarab": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Undead Animations/Royal Scarab/RoyalScarab.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Undead Animations/Royal Scarab/RoyalScarab.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Undead Animations/Royal Scarab/RoyalScarab.png"
+    },
+    "sand-ghoul": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Undead Animations/Sand Ghoul/SandGhoul.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Undead Animations/Sand Ghoul/SandGhoul.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Undead Animations/Sand Ghoul/SandGhoul.png"
+    },
+    "skittering-hand": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Undead Animations/Skittering Hand/SkitteringHand.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Undead Animations/Skittering Hand/SkitteringHand.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Undead Animations/Skittering Hand/SkitteringHand.png"
+    },
+    "toxic-hound": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Undead Animations/Toxic Hound/ToxicHound.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Undead Animations/Toxic Hound/ToxicHound.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Undead Animations/Toxic Hound/ToxicHound.png"
+    },
+    "unraveling-crawler": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Undead Animations/Unraveling Crawler/UnravelingCrawler.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Undead Animations/Unraveling Crawler/UnravelingCrawler.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Undead Animations/Unraveling Crawler/UnravelingCrawler.png"
+    },
+    "vampire-bat": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Undead Animations/Vampire Bat/VampireBat.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Undead Animations/Vampire Bat/VampireBat.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Undead Animations/Vampire Bat/VampireBat.png"
+    },
+    "clucking-chicken": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Animal Animations/Clucking Chicken/CluckingChicken.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Animal Animations/Clucking Chicken/CluckingChicken.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Animal Animations/Clucking Chicken/CluckingChicken.png"
+    },
+    "coral-crab": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Animal Animations/Coral Crab/CoralCrab.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Animal Animations/Coral Crab/CoralCrab.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Animal Animations/Coral Crab/CoralCrab.png"
+    },
+    "croaking-toad": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Animal Animations/Croaking Toad/CroakingToad.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Animal Animations/Croaking Toad/CroakingToad.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Animal Animations/Croaking Toad/CroakingToad.png"
+    },
+    "dainty-pig": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Animal Animations/Dainty Pig/DaintyPig.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Animal Animations/Dainty Pig/DaintyPig.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Animal Animations/Dainty Pig/DaintyPig.png"
+    },
+    "honking-goose": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Animal Animations/Honking Goose/HonkingGoose.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Animal Animations/Honking Goose/HonkingGoose.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Animal Animations/Honking Goose/HonkingGoose.png"
+    },
+    "leaping-frog": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Animal Animations/Leaping Frog/LeapingFrog.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Animal Animations/Leaping Frog/LeapingFrog.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Animal Animations/Leaping Frog/LeapingFrog.png"
+    },
+    "mad-boar": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Animal Animations/Mad Boar/MadBoar.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Animal Animations/Mad Boar/MadBoar.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Animal Animations/Mad Boar/MadBoar.png"
+    },
+    "meowing-cat": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Animal Animations/Meowing Cat/MeowingCat.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Animal Animations/Meowing Cat/MeowingCat.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Animal Animations/Meowing Cat/MeowingCat.png"
+    },
+    "pasturing-sheep": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Animal Animations/Pasturing Sheep/PasturingSheep.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Animal Animations/Pasturing Sheep/PasturingSheep.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Animal Animations/Pasturing Sheep/PasturingSheep.png"
+    },
+    "slow-turtle": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Animal Animations/Slow Turtle/SlowTurtle.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Animal Animations/Slow Turtle/SlowTurtle.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Animal Animations/Slow Turtle/SlowTurtle.png"
+    },
+    "snow-fox": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Animal Animations/Snow Fox/SnowFox.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Animal Animations/Snow Fox/SnowFox.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Animal Animations/Snow Fox/SnowFox.png"
+    },
+    "spikey-porcupine": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Animal Animations/Spikey Porcupine/SpikeyPorcupine.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Animal Animations/Spikey Porcupine/SpikeyPorcupine.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Animal Animations/Spikey Porcupine/SpikeyPorcupine.png"
+    },
+    "stinky-skunk": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Animal Animations/Stinky Skunk/StinkySkunk.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Animal Animations/Stinky Skunk/StinkySkunk.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Animal Animations/Stinky Skunk/StinkySkunk.png"
+    },
+    "timber-wolf": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Animal Animations/Timber Wolf/TimberWolf.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Animal Animations/Timber Wolf/TimberWolf.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Animal Animations/Timber Wolf/TimberWolf.png"
+    },
+    "tiny-chick": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Animal Animations/Tiny Chick/TinyChick.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Animal Animations/Tiny Chick/TinyChick.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Animal Animations/Tiny Chick/TinyChick.png"
+    },
+    "blessed-gladiator": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Holy Animations/Blessed Gladiator/BlessedGladiator.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Holy Animations/Blessed Gladiator/BlessedGladiator.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Holy Animations/Blessed Gladiator/BlessedGladiator.png"
+    },
+    "determined-soldier": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Holy Animations/Determined Soldier/DeterminedSoldier.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Holy Animations/Determined Soldier/DeterminedSoldier.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Holy Animations/Determined Soldier/DeterminedSoldier.png"
+    },
+    "devout-acolyte": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Holy Animations/Devout Acolyte/DevoutAcolyte.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Holy Animations/Devout Acolyte/DevoutAcolyte.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Holy Animations/Devout Acolyte/DevoutAcolyte.png"
+    },
+    "divine-planetar": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Holy Animations/Divine Planetar/DivinePlanetar.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Holy Animations/Divine Planetar/DivinePlanetar.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Holy Animations/Divine Planetar/DivinePlanetar.png"
+    },
+    "favored-cleric": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Holy Animations/Favored Cleric/FavoredCleric.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Holy Animations/Favored Cleric/FavoredCleric.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Holy Animations/Favored Cleric/FavoredCleric.png"
+    },
+    "floating-cherub": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Holy Animations/Floating Cherub/FloatingCherub.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Holy Animations/Floating Cherub/FloatingCherub.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Holy Animations/Floating Cherub/FloatingCherub.png"
+    },
+    "gentle-shepard": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Holy Animations/Gentle Shepard/GentleShepard.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Holy Animations/Gentle Shepard/GentleShepard.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Holy Animations/Gentle Shepard/GentleShepard.png"
+    },
+    "holy-crusader": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Holy Animations/Holy Crusader/HolyCrusader.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Holy Animations/Holy Crusader/HolyCrusader.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Holy Animations/Holy Crusader/HolyCrusader.png"
+    },
+    "jovial-friar": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Holy Animations/Jovial Friar/JovialFriar.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Holy Animations/Jovial Friar/JovialFriar.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Holy Animations/Jovial Friar/JovialFriar.png"
+    },
+    "resolute-angel": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Holy Animations/Resolute Angel/ResoluteAngel.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Holy Animations/Resolute Angel/ResoluteAngel.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Holy Animations/Resolute Angel/ResoluteAngel.png"
+    },
+    "righteous-deva": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Holy Animations/Righteous Deva/RighteousDeva.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Holy Animations/Righteous Deva/RighteousDeva.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Holy Animations/Righteous Deva/RighteousDeva.png"
+    },
+    "sword-archon": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Holy Animations/Sword Archon/SwordArchon.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Holy Animations/Sword Archon/SwordArchon.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Holy Animations/Sword Archon/SwordArchon.png"
+    },
+    "veteran-swordsman": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Holy Animations/Veteran Swordsman/VeteranSwordsman.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Holy Animations/Veteran Swordsman/VeteranSwordsman.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Holy Animations/Veteran Swordsman/VeteranSwordsman.png"
+    },
+    "zealous-priest": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Holy Animations/Zealous Priest/ZealousPriest.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Holy Animations/Zealous Priest/ZealousPriest.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Holy Animations/Zealous Priest/ZealousPriest.png"
+    },
+    "acid-ant": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Vermin Animations/Acid Ant/AcidAnt.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Vermin Animations/Acid Ant/AcidAnt.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Vermin Animations/Acid Ant/AcidAnt.png"
+    },
+    "bloated-bedbug": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Vermin Animations/Bloated Bedbug/BloatedBedbug.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Vermin Animations/Bloated Bedbug/BloatedBedbug.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Vermin Animations/Bloated Bedbug/BloatedBedbug.png"
+    },
+    "dung-beetle": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Vermin Animations/Dung Beetle/DungBeetle.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Vermin Animations/Dung Beetle/DungBeetle.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Vermin Animations/Dung Beetle/DungBeetle.png"
+    },
+    "engorged-tick": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Vermin Animations/Engorged Tick/EngorgedTick.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Vermin Animations/Engorged Tick/EngorgedTick.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Vermin Animations/Engorged Tick/EngorgedTick.png"
+    },
+    "famished-tick": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Vermin Animations/Famished Tick/FamishedTick.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Vermin Animations/Famished Tick/FamishedTick.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Vermin Animations/Famished Tick/FamishedTick.png"
+    },
+    "foraging-maggot": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Vermin Animations/Foraging Maggot/ForagingMaggot.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Vermin Animations/Foraging Maggot/ForagingMaggot.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Vermin Animations/Foraging Maggot/ForagingMaggot.png"
+    },
+    "infected-mouse": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Vermin Animations/Infected Mouse/InfectedMouse.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Vermin Animations/Infected Mouse/InfectedMouse.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Vermin Animations/Infected Mouse/InfectedMouse.png"
+    },
+    "lava-ant": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Vermin Animations/Lava Ant/LavaAnt.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Vermin Animations/Lava Ant/LavaAnt.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Vermin Animations/Lava Ant/LavaAnt.png"
+    },
+    "mawing-beaver": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Vermin Animations/Mawing Beaver/MawingBeaver.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Vermin Animations/Mawing Beaver/MawingBeaver.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Vermin Animations/Mawing Beaver/MawingBeaver.png"
+    },
+    "plague-bat": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Vermin Animations/Plague Bat/PlagueBat.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Vermin Animations/Plague Bat/PlagueBat.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Vermin Animations/Plague Bat/PlagueBat.png"
+    },
+    "rhino-beetle": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Vermin Animations/Rhino Beetle/RhinoBeetle.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Vermin Animations/Rhino Beetle/RhinoBeetle.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Vermin Animations/Rhino Beetle/RhinoBeetle.png"
+    },
+    "soldier-ant": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Vermin Animations/Soldier Ant/SoldierAnt.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Vermin Animations/Soldier Ant/SoldierAnt.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Vermin Animations/Soldier Ant/SoldierAnt.png"
+    },
+    "swooping-bat": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Vermin Animations/Swooping Bat/SwoopingBat.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Vermin Animations/Swooping Bat/SwoopingBat.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Vermin Animations/Swooping Bat/SwoopingBat.png"
+    },
+    "tainted-cockroach": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Vermin Animations/Tainted Cockroach/TaintedCockroach.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Vermin Animations/Tainted Cockroach/TaintedCockroach.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Vermin Animations/Tainted Cockroach/TaintedCockroach.png"
+    },
+    "tunneling-mole": {
+      "4x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Vermin Animations/Tunneling Mole/TunnelingMole.png",
+      "2x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Vermin Animations/Tunneling Mole/TunnelingMole.png",
+      "1x": "/assets/sprites/Custom Sprites/Custom Sprites/Basic Vermin Animations/Tunneling Mole/TunnelingMole.png"
+    }
+  },
+  "companion": {}
+}

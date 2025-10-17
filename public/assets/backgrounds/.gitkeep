@@ -1,0 +1,13 @@
+# Background Assets Directory
+
+Place your 600×600 dungeon background PNG files here.
+
+Expected files:
+- dungeon-room.png
+
+Optional:
+- dungeon-hallway.png
+- dungeon-chamber.png
+- cave.png
+
+See ../ASSETS_README.md for details.

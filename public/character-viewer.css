@@ -1,0 +1,386 @@
+/* ========================================
+   MOBILE CHARACTER VIEWER WITH ANIMATIONS
+   ======================================== */
+
+/* COMPACT VERSION (for character sheet) */
+.character-viewer-compact {
+    background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-bg-dark) 100%);
+    padding: 1rem !important;
+    margin-bottom: 1rem;
+}
+
+#mobile-character-viewer-compact {
+    padding: 0;
+}
+
+.character-display-compact {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
+    position: relative;
+}
+
+.character-sprite-container-compact {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    flex-shrink: 0;
+}
+
+.character-sprite-container-compact .character-sprite {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.6));
+    animation: characterFloat 3s ease-in-out infinite;
+}
+
+.character-name-display-compact {
+    flex: 1;
+    text-align: left;
+}
+
+.character-name-display-compact h3 {
+    font-family: var(--font-title);
+    font-size: 1.3rem;
+    color: var(--color-special);
+    margin: 0 0 0.25rem 0;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+}
+
+.character-name-display-compact p {
+    font-size: 0.95rem;
+    color: var(--color-text-secondary);
+    font-style: italic;
+    margin: 0;
+}
+
+/* FULL VERSION (standalone - kept for modals) */
+.character-viewer-panel {
+    background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-bg-dark) 100%);
+    min-height: calc(100vh - 200px);
+}
+
+#mobile-character-viewer {
+    padding: 1rem 0;
+}
+
+/* Character Display Section */
+.character-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 2rem;
+    position: relative;
+}
+
+.character-sprite-container {
+    position: relative;
+    width: 180px;
+    height: 180px;
+    margin-bottom: 1.5rem;
+}
+
+.character-sprite {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+    filter: drop-shadow(0 8px 16px rgba(0,0,0,0.6));
+    animation: characterFloat 3s ease-in-out infinite, characterGlow 2s ease-in-out infinite alternate;
+}
+
+/* Floating animation */
+@keyframes characterFloat {
+    0%, 100% {
+        transform: translateY(0px) scale(1);
+    }
+    50% {
+        transform: translateY(-15px) scale(1.05);
+    }
+}
+
+/* Glowing effect */
+@keyframes characterGlow {
+    0% {
+        filter: drop-shadow(0 8px 16px rgba(0,0,0,0.6)) 
+                drop-shadow(0 0 20px rgba(255,215,0,0.3));
+    }
+    100% {
+        filter: drop-shadow(0 8px 16px rgba(0,0,0,0.6)) 
+                drop-shadow(0 0 40px rgba(255,215,0,0.6))
+                drop-shadow(0 0 60px rgba(255,215,0,0.4));
+    }
+}
+
+/* Sparkle animations around character */
+.sprite-animations {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.anim-sparkle {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: radial-gradient(circle, #FFD700 0%, transparent 70%);
+    border-radius: 50%;
+    animation: sparkleFloat 3s ease-in-out infinite;
+    opacity: 0;
+}
+
+.anim-sparkle:nth-child(1) {
+    top: 20%;
+    left: 10%;
+    animation-delay: 0s;
+}
+
+.anim-sparkle:nth-child(2) {
+    top: 60%;
+    right: 15%;
+    animation-delay: 1s;
+}
+
+.anim-sparkle:nth-child(3) {
+    bottom: 25%;
+    left: 20%;
+    animation-delay: 2s;
+}
+
+@keyframes sparkleFloat {
+    0% {
+        opacity: 0;
+        transform: translateY(0) scale(0);
+    }
+    50% {
+        opacity: 1;
+        transform: translateY(-30px) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-60px) scale(0);
+    }
+}
+
+/* Character name and class */
+.character-name-display {
+    text-align: center;
+    width: 100%;
+}
+
+.character-name-display h3 {
+    font-family: var(--font-title);
+    font-size: 1.8rem;
+    color: var(--color-special);
+    margin: 0 0 0.5rem 0;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8), 
+                 0 0 20px rgba(255,215,0,0.4);
+    animation: textGlow 2s ease-in-out infinite alternate;
+}
+
+.character-name-display p {
+    font-size: 1.1rem;
+    color: var(--color-text-secondary);
+    font-style: italic;
+    margin: 0;
+}
+
+@keyframes textGlow {
+    0% {
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.8), 
+                     0 0 20px rgba(255,215,0,0.3);
+    }
+    100% {
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.8), 
+                     0 0 30px rgba(255,215,0,0.6),
+                     0 0 40px rgba(255,215,0,0.4);
+    }
+}
+
+/* Stats Grid */
+.character-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    padding: 0 0.5rem;
+}
+
+.stat-card {
+    background: linear-gradient(135deg, 
+        rgba(var(--color-primary-rgb), 0.1) 0%, 
+        rgba(var(--color-surface-rgb), 0.8) 100%);
+    border: 2px solid var(--color-border);
+    border-radius: 12px;
+    padding: 1rem 0.75rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, 
+        rgba(255,215,0,0.1) 0%, 
+        transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.stat-card:active {
+    transform: scale(0.95);
+    border-color: var(--color-special);
+}
+
+.stat-card:active::before {
+    opacity: 1;
+}
+
+.stat-icon {
+    font-size: 2rem;
+    color: var(--color-special);
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+}
+
+.stat-content {
+    text-align: center;
+    width: 100%;
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.stat-value {
+    font-size: 1.3rem;
+    font-weight: bold;
+    color: var(--color-text-primary);
+    font-family: var(--font-title);
+}
+
+/* Special styling for HP stat */
+.stat-card:first-child {
+    grid-column: span 3;
+    flex-direction: row;
+    justify-content: center;
+}
+
+.stat-card:first-child .stat-icon {
+    font-size: 2.5rem;
+    color: #e74c3c;
+}
+
+.stat-card:first-child .stat-value {
+    font-size: 1.5rem;
+    color: #e74c3c;
+}
+
+/* Level stat special styling */
+.stat-card:nth-child(2) .stat-icon {
+    color: #f39c12;
+}
+
+.stat-card:nth-child(2) .stat-value {
+    color: #f39c12;
+}
+
+/* XP stat special styling */
+.stat-card:nth-child(3) .stat-icon {
+    color: #3498db;
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+    .character-sprite-container {
+        width: 150px;
+        height: 150px;
+    }
+    
+    .character-name-display h3 {
+        font-size: 1.5rem;
+    }
+    
+    .character-stats-grid {
+        gap: 0.5rem;
+    }
+    
+    .stat-card {
+        padding: 0.75rem 0.5rem;
+    }
+    
+    .stat-icon {
+        font-size: 1.5rem;
+    }
+    
+    .stat-value {
+        font-size: 1.1rem;
+    }
+}
+
+@media (min-width: 481px) and (max-width: 768px) {
+    .character-sprite-container {
+        width: 200px;
+        height: 200px;
+    }
+    
+    .character-stats-grid {
+        grid-template-columns: repeat(3, 1fr);
+        max-width: 500px;
+        margin: 0 auto;
+    }
+}
+
+/* Pulse animation on stat update */
+@keyframes statPulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+.stat-value.updated {
+    animation: statPulse 0.5s ease;
+    color: var(--color-success);
+}
+
+/* Loading state */
+.character-viewer-panel.loading .character-sprite {
+    animation: characterFloat 3s ease-in-out infinite, 
+               pulse 1s ease-in-out infinite;
+    opacity: 0.5;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 0.5;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+

@@ -1,0 +1,11 @@
+# Tile Assets Directory
+
+Place your 32×32 dungeon tile PNG files here.
+
+Expected files:
+- stone-floor.png
+- stone-floor-dark.png
+- stone-wall.png
+- wooden-floor.png
+
+See ../ASSETS_README.md for details.

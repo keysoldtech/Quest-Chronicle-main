@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <title>Quest & Chronicle - Offline Single Player</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=MedievalSharp&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/style.css">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- Favicons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    
+    <!-- Apple Touch Icon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
+    
+    <!-- iOS Web App -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Q&C">
+    
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#4A1E3A">
+    <meta name="apple-mobile-web-app-title" content="Quest & Chronicle">
+</head>
+<body>
+    <div class="background-animation"></div>
+
+    <!-- MENU SCREEN -->
+    <div id="menu-screen" class="screen active">
+        <div class="menu-background-layers">
+            <div class="bg-layer layer-1"></div>
+            <div class="bg-layer layer-2"></div>
+        </div>
+        <div class="menu-container">
+            <h1 class="game-title">Quest & Chronicle</h1>
+            <p class="game-subtitle">Offline Single Player</p>
+            <div class="version-display">v4.1.1 The Journey of Lore</div>
+            
+            <div class="menu-section">
+                <label for="player-name-input" class="input-label">Enter Your Name</label>
+                <input type="text" id="player-name-input" placeholder="Hero's Name" maxlength="20">
+            </div>
+
+            <div class="menu-section game-actions">
+                <div class="game-action-card create-card">
+                    <h3>Start Your Adventure</h3>
+                    <div class="mode-buttons">
+                        <button class="mode-btn" data-mode="Easy">
+                            <span class="mode-title">Easy</span>
+                        </button>
+                        <button class="mode-btn" data-mode="Normal">
+                            <span class="mode-title">Normal</span>
+                        </button>
+                        <button class="mode-btn" data-mode="Hard">
+                            <span class="mode-title">Hard</span>
+                        </button>
+                    </div>
+                    <button id="start-game-btn" class="btn btn-primary" disabled>Begin Adventure</button>
+                </div>
+            </div>
+            
+            <div id="menu-error" class="error-message hidden"></div>
+            
+            <div class="offline-notice">
+                ✓ No internet connection required<br>
+                ✓ Save & resume anytime<br>
+                ✓ Works on all platforms
+            </div>
+        </div>
+    </div>
+
+    <!-- Game content will be dynamically loaded -->
+    <div id="game-container"></div>
+    
+    <div id="toast-container"></div>
+    
+    <!-- Standalone offline scripts -->
+    <!-- Onboarding (first-time) -->
+    <div id="onboarding-overlay" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2 class="panel-header">Welcome to Quest & Chronicle</h2>
+            <p>Quick tips:
+                <br>1) Pick a class to start.
+                <br>2) Select a weapon, then click a monster.
+                <br>3) End turn when out of AP.
+            </p>
+            <label style="display:flex; gap:8px; align-items:center; margin-top:8px;">
+                <input type="checkbox" id="onboarding-dont-show"> Don't show again
+            </label>
+            <div class="modal-actions" style="margin-top:12px;">
+                <button id="onboarding-close-btn" class="btn btn-primary">Got it</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/telemetry.js"></script>
+    <script src="/offline-game-engine.js"></script>
+    <script src="/standalone-client.js"></script>
+    <script>
+        // Register Service Worker for offline functionality
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('[Offline App] Service Worker registered:', registration.scope);
+                    })
+                    .catch(error => {
+                        console.log('[Offline App] Service Worker registration failed:', error);
+                    });
+            });
+        }
+        
+        console.log('[Offline App] Fully standalone - no server required!');
+    </script>
+</body>
+</html>
+

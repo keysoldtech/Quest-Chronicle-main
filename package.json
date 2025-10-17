@@ -1,0 +1,18 @@
+{
+  "_comment": "This file defines Node.js project metadata, scripts (like 'start'), and dependencies (express, socket.io). This file is essential for installing dependencies (npm install) and running the server (npm start).",
+  "name": "quest-and-chronicle-server",
+  "version": "4.1.1",
+  "description": "Multiplayer server for Quest & Chronicle card game.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "generate:sprites": "node scripts/generate-sprite-manifest.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "canvas": "^3.2.0",
+    "express": "^4.19.2",
+    "socket.io": "^4.7.5"
+  }
+}
