@@ -17,6 +17,39 @@
 //    - 3.9. Event & Challenge Handling
 //    - 3.10. Chat & Disconnect Logic
 // 4. SOCKET.IO CONNECTION HANDLING
+//
+// --- FUTURE: ASYMMETRIC DM MODE (1v4) ---
+// Architecture notes for the planned Dungeon Master player mode:
+//
+// Currently the DM is an NPC ('npc-dm') that auto-spawns monsters and takes
+// automated turns via takeDmTurn(). To support a human DM:
+//
+// 1. Room creation: add a `dmMode: 'human'|'ai'` flag in createRoom payload.
+//    When human, one player slot is assigned role:'DM' instead of role:'Explorer'.
+//
+// 2. Turn flow: when dmMode is 'human', skip the AI spawn/attack logic in
+//    takeDmTurn() and instead emit a 'dmTurnStarted' event to the DM socket.
+//    The DM client would show a separate UI panel for:
+//    - Choosing which monster to spawn (from available decks/hand)
+//    - Placing monsters on the grid
+//    - Directing monster attacks against specific explorers
+//    - Triggering dungeon events, traps, and hazards
+//    - Controlling world events
+//
+// 3. DM hand: the DM draws from monster/event decks into a hand and plays
+//    cards similarly to explorers, spending DM AP (separate AP pool).
+//
+// 4. Balance: DM actions should be constrained by AP, hand size, and
+//    cooldowns to prevent overwhelming the explorer party. The synergy and
+//    party hope systems can serve as soft difficulty regulators.
+//
+// 5. Win condition: Explorers win by surviving N rooms or defeating the
+//    final boss. DM wins by downing all explorers.
+//
+// Key files that will need changes:
+// - server.js: createRoom, startGame, takeDmTurn, moveToNextTurn, action routing
+// - client.js: DM-specific UI panels, monster placement, event triggers
+// - game-data.js: DM-specific cards, DM ability definitions
 
 // --- 1. SERVER SETUP ---
 const express = require('express');

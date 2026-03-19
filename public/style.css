@@ -3965,9 +3965,39 @@ body {
 .event-choice-label {
     font-weight: bold;
     color: var(--color-special);
-    display: block;
-    margin-bottom: 0.5rem;
     font-size: 1.1rem;
+}
+
+.path-choice-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.4rem;
+}
+.path-choice-icon {
+    font-size: 1.3rem;
+    color: var(--color-special);
+}
+.path-choice-meta {
+    display: flex;
+    gap: 1rem;
+    margin-top: 0.4rem;
+    font-size: 0.8rem;
+}
+.path-danger {
+    color: var(--color-danger);
+}
+.path-reward {
+    color: #7ec17e;
+}
+.event-choice-btn.boss-choice {
+    border-color: var(--color-danger);
+    background: rgba(166, 42, 42, 0.15);
+}
+.event-choice-btn.boss-choice:hover {
+    border-color: #ff4444;
+    background: rgba(166, 42, 42, 0.3);
+    box-shadow: 0 0 15px rgba(255, 68, 68, 0.3);
 }
 
 .event-choice-description {

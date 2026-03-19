@@ -1674,7 +1674,8 @@ function initializeUI() {
             let payload = { 
                 playerName: myPlayerName, 
                 gameMode: clientState.selectedGameMode,
-                accountUpgrades: accountManager.data.upgrades 
+                accountUpgrades: accountManager.data.upgrades,
+                metaPerks: accountManager.data.metaPerks || {}
             };
             if (clientState.selectedGameMode === 'Custom') {
                 payload.customSettings = {
@@ -3934,14 +3935,28 @@ function renderChoosePathModal() {
         return;
     }
 
-    // Build event-style choice buttons
+    const typeIcons = {
+        combat: 'swords', treasure: 'diamond', event: 'explore',
+        shop: 'storefront', rest: 'local_fire_department', ambush: 'warning',
+        boss: 'castle'
+    };
+
     list.innerHTML = '';
     rooms.forEach((r) => {
         const btn = document.createElement('button');
-        btn.className = 'event-choice-btn';
+        const isBoss = r.type === 'boss';
+        btn.className = `event-choice-btn ${isBoss ? 'boss-choice' : ''}`;
+        const icon = typeIcons[r.type] || 'help';
         btn.innerHTML = `
-            <span class="event-choice-label">${r.type.toUpperCase()}</span>
-            <div class="event-choice-description">Danger: ${r.preview?.danger || '?'} · Reward: ${r.preview?.reward || '?'}</div>
+            <div class="path-choice-header">
+                <span class="material-symbols-outlined path-choice-icon">${icon}</span>
+                <span class="event-choice-label">${r.type.toUpperCase()}</span>
+            </div>
+            <div class="event-choice-description">${r.preview?.description || ''}</div>
+            <div class="path-choice-meta">
+                <span class="path-danger">Danger: ${r.preview?.danger || '?'}</span>
+                <span class="path-reward">Reward: ${r.preview?.reward || '?'}</span>
+            </div>
         `;
         btn.addEventListener('click', () => {
             if (choosePathLock) return; // Debounce spam clicks
