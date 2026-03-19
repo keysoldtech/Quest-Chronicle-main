@@ -442,23 +442,24 @@ class GameManager {
         this.emitGameState(room.id);
     }
     // --- 3.2. Room & Player Management ---
-    createPlayerObject(id, name, isNpc = false, accountUpgrades = {}) {
+    createPlayerObject(id, name, isNpc = false, accountUpgrades = {}, metaPerks = {}) {
         const playerId = `player_${Math.random().toString(36).substr(2, 9)}`;
         return {
-            id, // Socket ID
-            playerId, // Persistent ID for reconnection
+            id,
+            playerId,
             name,
             isNpc,
             level: 1,
             xp: 0,
-            runXp: 0, // Total XP for this run
-            xpToNextLevel: 25, // First level only 25 XP
+            runXp: 0,
+            xpToNextLevel: 25,
             enemiesDefeated: 0,
-            accountUpgrades, // Store persistent upgrades
+            accountUpgrades,
+            metaPerks,
             inRunStatBonuses: { str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0 },
             isDowned: false,
             disconnected: false,
-            hasTakenFirstTurn: false, // For new player tutorial
+            hasTakenFirstTurn: false,
             pauseTimer: null,
             replacementTimer: null,
             role: null,
@@ -478,8 +479,25 @@ class GameManager {
         };
     }
 
-    createRoom(socket, { playerName, gameMode, customSettings, accountUpgrades, runModifiers, seed }) {
-        const newPlayer = this.createPlayerObject(socket.id, playerName, false, accountUpgrades);
+    _applyMetaPerks(player) {
+        const perks = player.metaPerks || {};
+        if (perks.startingGold) player.gold = (player.gold || 0) + 50;
+        if (perks.extraHp) player.inRunStatBonuses.con = (player.inRunStatBonuses.con || 0) + 1;
+        if (perks.combatant) player.inRunStatBonuses.str = (player.inRunStatBonuses.str || 0) + 1;
+    }
+
+    _getMetaPerkMultipliers(player) {
+        const perks = player.metaPerks || {};
+        return {
+            xpMultiplier: perks.fastLearner ? 1.1 : 1.0,
+            lootRarityBonus: perks.luckyStart ? 0.05 : 0,
+            synergyBonus: perks.masterTactician ? 0.5 : 0,
+            critChanceBonus: perks.criticalExpert ? 0.05 : 0,
+        };
+    }
+
+    createRoom(socket, { playerName, gameMode, customSettings, accountUpgrades, metaPerks, runModifiers, seed }) {
+        const newPlayer = this.createPlayerObject(socket.id, playerName, false, accountUpgrades, metaPerks || {});
         const newRoomId = this.generateRoomId();
     
         console.log(`[CreateRoom] Creating room ${newRoomId} for player ${playerName} (socket: ${socket.id}, isNpc: ${newPlayer.isNpc})`);
@@ -523,9 +541,12 @@ class GameManager {
                 seed: seed || null,
                 runModifiers: runModifiers || {},
                 nextRooms: [],
-                pathChooserId: null, // Which player is deciding the path (only they see the modal)
+                pathChooserId: null,
                 lastPathChoiceRound: -999,
                 recentRoomTypes: [],
+                roomsCleared: 0,
+                depth: 1,
+                bossDefeatedThisDepth: false,
             },
             chatLog: [],
             savedPlayers: {}, // For storing data of disconnected players
@@ -748,12 +769,14 @@ class GameManager {
         }
         this.initializeDecks(room);
 
-        // Initialize each player fully, calculate stats first for initiative.
+        // Initialize each player fully, apply meta-perks, calculate stats for initiative.
         Object.values(room.players).forEach(p => {
+            if (p.role === 'Explorer' && !p.isNpc) {
+                this._applyMetaPerks(p);
+            }
             p.stats = this.calculatePlayerStats(p, room.gameState.partyHope);
             if (p.role === 'Explorer') {
                 this.dealStartingLoadout(room, p);
-                // Initialize currency
                 if (typeof p.gold !== 'number') p.gold = 50;
             }
         });
@@ -1143,11 +1166,14 @@ class GameManager {
     
     _addXpToPlayer(room, player, xpAmount) {
         if (!player || player.isDowned) return;
-        const xpBonus = Math.floor(xpAmount * (player.stats.int * 0.05)); // +5% XP per INT point
+        const xpBonus = Math.floor(xpAmount * (player.stats.int * 0.05));
         let totalXpGained = xpAmount + xpBonus;
-        // Daily modifier: Double XP
         if (room?.gameState?.runModifiers?.daily && room.gameState.runModifiers.modifiers?.includes('Double XP')) {
             totalXpGained *= 2;
+        }
+        const perkMults = this._getMetaPerkMultipliers(player);
+        if (perkMults.xpMultiplier > 1.0) {
+            totalXpGained = Math.floor(totalXpGained * perkMults.xpMultiplier);
         }
         player.xp += totalXpGained;
         player.runXp += totalXpGained;
@@ -1223,34 +1249,204 @@ class GameManager {
     }
 
     _generateNextRooms(room, chooserPlayer) {
+        room.gameState.roomsCleared = (room.gameState.roomsCleared || 0) + 1;
+        const depth = room.gameState.roomsCleared;
+        room.gameState.depth = depth;
+
+        // Boss room every 5 rooms cleared (forced, no choice)
+        if (depth > 0 && depth % 5 === 0 && !room.gameState.bossDefeatedThisDepth) {
+            const bossRoom = {
+                id: `room_${Date.now()}_boss`,
+                type: 'boss',
+                preview: this._getRoomPreview(room, 'boss')
+            };
+            room.gameState.nextRooms = [bossRoom];
+            const humanExplorers = Object.values(room.players).filter(p => p.role === 'Explorer' && !p.isNpc);
+            const chooser = (chooserPlayer && !chooserPlayer.isNpc) ? chooserPlayer : humanExplorers[0];
+            room.gameState.pathChooserId = chooser?.id || null;
+            room.chatLog.push({ type: 'system', text: `A powerful presence blocks the way forward... Boss encounter!`, timestamp: Date.now() });
+            this.emitGameState(room.id);
+            return;
+        }
+        room.gameState.bossDefeatedThisDepth = false;
+
+        // Weight room types based on depth for strategic variety
+        const baseTypes = [
+            { type: 'combat',   weight: 30 },
+            { type: 'event',    weight: 20 },
+            { type: 'treasure', weight: 15 },
+            { type: 'shop',     weight: 15 },
+            { type: 'rest',     weight: 15 },
+            { type: 'ambush',   weight: Math.min(15, depth * 2) },
+        ];
+        const noShops = room.gameState.runModifiers?.daily && room.gameState.runModifiers.modifiers?.includes('No shops');
+        const recent = room.gameState.recentRoomTypes || [];
+
+        const pickWeightedType = () => {
+            const pool = baseTypes.filter(t => {
+                if (noShops && t.type === 'shop') return false;
+                return true;
+            });
+            // Reduce weight of recently visited types
+            const adjusted = pool.map(t => ({
+                ...t,
+                weight: recent.includes(t.type) ? t.weight * 0.3 : t.weight
+            }));
+            const totalWeight = adjusted.reduce((s, t) => s + t.weight, 0);
+            let r = nextDailyRandom(room, 'path-type') * totalWeight;
+            for (const t of adjusted) {
+                r -= t.weight;
+                if (r <= 0) return t.type;
+            }
+            return 'combat';
+        };
+
         const options = [];
-        const types = ['combat', 'treasure', 'event', 'shop', 'rest'];
+        const usedTypes = new Set();
         while (options.length < 3) {
-            const t = types[Math.floor(nextDailyRandom(room, 'path-type') * types.length)];
-            if (room.gameState.runModifiers?.daily && room.gameState.runModifiers.modifiers?.includes('No shops') && t === 'shop') continue;
+            const t = pickWeightedType();
+            if (usedTypes.has(t) && options.length < 2) continue;
+            usedTypes.add(t);
             const preview = this._getRoomPreview(room, t);
             options.push({ id: `room_${Date.now()}_${options.length}`, type: t, preview });
         }
-        // Prevent immediate repeats: prefer unique types if possible
-        const recent = room.gameState.recentRoomTypes || [];
-        const unique = options.filter(o => !recent.includes(o.type));
-        room.gameState.nextRooms = unique.length >= 2 ? unique.slice(0,3) : options;
-        // Ensure the chooser is a human Explorer; fall back to first human explorer if needed
+
+        room.gameState.nextRooms = options;
         const humanExplorers = Object.values(room.players).filter(p => p.role === 'Explorer' && !p.isNpc);
         const chooser = (chooserPlayer && !chooserPlayer.isNpc && chooserPlayer.role === 'Explorer') ? chooserPlayer : humanExplorers[0];
         room.gameState.pathChooserId = chooser?.id || null;
-        room.chatLog.push({ type: 'system', text: `${chooser?.name || 'Player'} will choose the next path: ${room.gameState.nextRooms.map(o=>o.type).join(' / ')}`, timestamp: Date.now() });
+        room.chatLog.push({ type: 'system', text: `${chooser?.name || 'Player'} will choose the next path (Depth ${depth}): ${room.gameState.nextRooms.map(o => o.type).join(' / ')}`, timestamp: Date.now() });
         this.emitGameState(room.id);
     }
+
     _getRoomPreview(room, type) {
+        const depth = room?.gameState?.depth || 1;
+        const dangerScale = depth <= 3 ? 'Low' : depth <= 7 ? 'Medium' : depth <= 12 ? 'High' : 'Extreme';
         switch(type) {
-            case 'combat': return { danger: 'Medium', reward: 'Standard loot + XP' };
-            case 'treasure': return { danger: 'Low (Trap DC 13)', reward: 'Rare item chance' };
-            case 'event': return { danger: 'Variable', reward: 'Random boon' };
-            case 'shop': return { danger: 'Safe', reward: 'Buy/Reroll items' };
-            case 'rest': return { danger: 'Safe', reward: 'Heal party' };
+            case 'combat':   return { danger: dangerScale, reward: 'Loot + XP', description: 'Battle awaits in the next chamber.' };
+            case 'treasure':  return { danger: `Trap DC ${12 + Math.floor(depth / 3)}`, reward: 'Rare item chance', description: 'A glittering cache, possibly trapped.' };
+            case 'event':     return { danger: 'Variable', reward: 'Random boon or challenge', description: 'Something stirs in the darkness...' };
+            case 'shop':      return { danger: 'Safe', reward: 'Buy/Reroll items', description: 'A wandering merchant offers wares.' };
+            case 'rest':      return { danger: 'Safe', reward: `Heal party (+${5 + depth} HP)`, description: 'A moment of respite by a campfire.' };
+            case 'ambush':    return { danger: 'High', reward: 'Bonus XP + loot', description: 'The shadows feel... hostile.' };
+            case 'boss':      return { danger: 'BOSS', reward: 'Epic loot + major XP', description: 'A fearsome guardian blocks your path!' };
         }
-        return { danger: 'Unknown', reward: 'Unknown' };
+        return { danger: 'Unknown', reward: 'Unknown', description: '' };
+    }
+
+    _spawnBossForRoom(room) {
+        const depth = room.gameState.depth || 1;
+        const bossKeys = Object.keys(gameData.bosses);
+        // Pick boss tier based on depth: 1-5=tier1, 6-10=tier2, 11+=tier3
+        const bossPool = bossKeys.filter(k => {
+            const b = gameData.bosses[k];
+            if (depth <= 5) return b.tier === 1;
+            if (depth <= 10) return b.tier <= 2;
+            return true;
+        });
+        const bossKey = bossPool[Math.floor(nextDailyRandom(room, 'boss-pick') * bossPool.length)] || bossKeys[0];
+        const bossData = gameData.bosses[bossKey];
+
+        // Scale boss with depth
+        const scaleMult = 1 + (Math.floor(depth / 5) * 0.25);
+        const avgLevel = this._getAvgExplorerLevel(room);
+        const levelScale = 1 + (Math.floor(avgLevel / 3) * 0.15);
+
+        const boss = {
+            id: `boss-${this.generateUniqueCardId()}`,
+            name: bossData.name,
+            type: 'Monster',
+            isBoss: true,
+            maxHp: Math.floor(bossData.hp * scaleMult * levelScale),
+            currentHp: Math.floor(bossData.hp * scaleMult * levelScale),
+            attackBonus: 6 + Math.floor(depth / 3),
+            requiredRollToHit: 14 + Math.floor(depth / 5),
+            effect: { dice: bossData.damage },
+            xpValue: bossData.essence || 100,
+            abilities: (bossData.abilities || []).map(a => ({ name: a })),
+            statusEffects: [],
+            stats: { str: 4, dex: 2, con: 4, int: 2, wis: 2, cha: 2 }
+        };
+
+        room.gameState.board.monsters.push(boss);
+
+        // Place boss on grid
+        const grid = room.gameState.grid;
+        const w = grid.width || 5;
+        const h = grid.height || 5;
+        const isOccupied = (x, y) => Object.values(grid.entities).some(e => e && e.x === x && e.y === y);
+        // Boss prefers center of grid
+        const centerX = Math.floor(w / 2);
+        const centerY = Math.floor(h / 2);
+        if (!isOccupied(centerX, centerY)) {
+            grid.entities[boss.id] = { x: centerX, y: centerY, type: 'monster' };
+        } else {
+            for (let tries = 0; tries < 100; tries++) {
+                const x = Math.floor(nextDailyRandom(room, 'boss-x') * w);
+                const y = Math.floor(nextDailyRandom(room, 'boss-y') * h);
+                if (!isOccupied(x, y)) {
+                    grid.entities[boss.id] = { x, y, type: 'monster' };
+                    break;
+                }
+            }
+        }
+
+        room.chatLog.push({ type: 'dm', text: `${bossData.name} emerges! Prepare for battle!`, timestamp: Date.now() });
+        return boss;
+    }
+
+    _spawnAmbush(room) {
+        const depth = room.gameState.depth || 1;
+        const ambushPool = gameData.dungeonEvents.ambushes;
+        const ambush = ambushPool[Math.floor(nextDailyRandom(room, 'ambush-pick') * ambushPool.length)];
+
+        room.chatLog.push({ type: 'dm', text: `${ambush.description}`, timestamp: Date.now() });
+
+        const monstersToSpawn = ambush.enemies || [];
+        for (const enemyName of monstersToSpawn) {
+            const template = gameData.allMonsters.find(m => m.name === enemyName);
+            if (!template) continue;
+
+            const scaleMult = 1 + (Math.floor(depth / 4) * 0.3);
+            const monster = {
+                id: `monster-${this.generateUniqueCardId()}`,
+                name: template.name,
+                type: 'Monster',
+                maxHp: Math.floor(template.maxHp * scaleMult),
+                currentHp: Math.floor(template.maxHp * scaleMult),
+                attackBonus: template.attackBonus + Math.floor(depth / 5),
+                requiredRollToHit: template.requiredRollToHit,
+                effect: { dice: template.effect?.dice || '1d6' },
+                xpValue: Math.floor((template.xpValue || 10) * scaleMult),
+                stats: { ...(template.stats || {}) },
+                statusEffects: []
+            };
+
+            room.gameState.board.monsters.push(monster);
+
+            const grid = room.gameState.grid;
+            const w = grid.width || 5;
+            const h = grid.height || 5;
+            for (let tries = 0; tries < 100; tries++) {
+                const x = Math.floor(nextDailyRandom(room, 'ambush-x') * w);
+                const y = Math.floor(nextDailyRandom(room, 'ambush-y') * Math.min(2, h));
+                const isOcc = Object.values(grid.entities).some(e => e && e.x === x && e.y === y);
+                if (!isOcc) {
+                    grid.entities[monster.id] = { x, y, type: 'monster' };
+                    break;
+                }
+            }
+        }
+
+        if (ambush.surprise) {
+            room.chatLog.push({ type: 'system', text: `Ambush! The enemies get a free attack round!`, timestamp: Date.now() });
+        }
+    }
+
+    _getAvgExplorerLevel(room) {
+        const explorers = Object.values(room.players).filter(p => p.role === 'Explorer' && !p.isDowned);
+        if (explorers.length === 0) return 1;
+        return Math.floor(explorers.reduce((sum, p) => sum + (p.level || 1), 0) / explorers.length);
     }
     
     openShop(room) {
@@ -1414,10 +1610,22 @@ class GameManager {
             return;
         }
         
-        if (room.gameState.board.monsters.some(m => m.isBoss && m.currentHp <= 0)) {
-            handleGameOver('Explorers');
-            room.isProcessingTurn = false; // Unlock on early return
-            return;
+        // Boss defeated = checkpoint, not game over. Mark depth cleared and continue.
+        const defeatedBosses = room.gameState.board.monsters.filter(m => m.isBoss && m.currentHp <= 0);
+        if (defeatedBosses.length > 0) {
+            room.gameState.bossDefeatedThisDepth = true;
+            room.gameState.board.monsters = room.gameState.board.monsters.filter(m => !(m.isBoss && m.currentHp <= 0));
+            defeatedBosses.forEach(boss => {
+                if (room.gameState.grid?.entities[boss.id]) delete room.gameState.grid.entities[boss.id];
+            });
+            room.chatLog.push({ type: 'system-good', text: `Boss defeated! The path forward opens. The dungeon grows darker...`, timestamp: Date.now() });
+            // Heal party partially as a boss reward
+            Object.values(room.players).forEach(p => {
+                if (p.class && !p.isDowned) {
+                    p.stats.currentHp = Math.min(p.stats.maxHp, p.stats.currentHp + Math.floor(p.stats.maxHp * 0.3));
+                }
+            });
+            this._modifyPartyHope(room, 3);
         }
 
         let nextPlayerIndex = (room.gameState.currentPlayerIndex + 1) % room.gameState.turnOrder.length;
@@ -1543,25 +1751,95 @@ class GameManager {
     }
 
     _triggerDungeonEvent(room, player) {
-        const eventTypes = Object.keys(gameData.dungeonEvents);
-        const randomType = eventTypes[Math.floor(Math.random() * eventTypes.length)];
-        const eventPool = gameData.dungeonEvents[randomType];
-        const event = eventPool[Math.floor(Math.random() * eventPool.length)];
-        
-        const eventData = {
-            id: `event_${Date.now()}`,
-            type: randomType,
-            name: event.name,
-            description: event.description,
-            choices: event.choices || [
-                { label: 'Investigate', description: 'Risk injury for potential rewards' },
-                { label: 'Bypass', description: 'Avoid risk, no reward' }
-            ]
-        };
-        
-        const playerSocket = io.sockets.sockets.get(player.id);
-        if (playerSocket) {
-            playerSocket.emit('dungeonEvent', eventData);
+        const depth = room.gameState.depth || 1;
+        // Filter event types based on depth for progressive challenge
+        const eventTypes = ['traps', 'puzzles', 'npcs', 'hazards'];
+        const randomType = eventTypes[Math.floor(nextDailyRandom(room, 'event-type') * eventTypes.length)];
+        const eventPool = gameData.dungeonEvents[randomType] || [];
+        if (eventPool.length === 0) return;
+        const event = eventPool[Math.floor(nextDailyRandom(room, 'event-pick') * eventPool.length)];
+
+        if (randomType === 'traps' || randomType === 'hazards') {
+            const scaledDC = (event.saveDC || 12) + Math.floor(depth / 4);
+            const scaledDamage = depth > 8 ? event.damage.replace(/(\d+)d/, (m, n) => `${Math.min(6, parseInt(n) + 1)}d`) : event.damage;
+            
+            const risk = {
+                skill: event.saveStat || 'dex',
+                dc: scaledDC,
+                description: `${event.description} (DC ${scaledDC})`,
+                success: { type: 'none', text: `You avoid the ${event.name}!` },
+                failure: { type: 'self_damage', value: scaledDamage, text: `${event.description} You take damage!` },
+                sourceTag: 'dungeonEvent'
+            };
+            if (event.status) {
+                risk.failure.status = event.status;
+                risk.failure.statusDuration = event.duration || 2;
+            }
+
+            room.gameState.skillChallenge = { isActive: true, details: risk, currentStage: 0, targetId: null };
+            room.chatLog.push({ type: 'system', text: `${event.name}: ${event.description}`, timestamp: Date.now() });
+            io.to(room.id).emit('promptSkillCheckRoll', {
+                rollerId: player.id,
+                rollerName: player.name,
+                title: event.name,
+                description: risk.description,
+                dice: 'd20',
+                bonus: player.stats?.[event.saveStat] || 0,
+                targetAC: scaledDC,
+                hasAdvantage: false
+            });
+
+        } else if (randomType === 'puzzles') {
+            const scaledDC = (event.solveDC || 13) + Math.floor(depth / 5);
+            const risk = {
+                skill: event.solveStat || 'int',
+                dc: scaledDC,
+                description: `${event.description} (DC ${scaledDC})`,
+                success: { type: 'loot', text: `You solved the ${event.name} and found treasure!` },
+                failure: { type: 'none', text: `The puzzle eludes you. Perhaps another time.` },
+                sourceTag: 'dungeonEvent'
+            };
+            room.gameState.skillChallenge = { isActive: true, details: risk, currentStage: 0, targetId: null };
+            room.chatLog.push({ type: 'system', text: `${event.name}: ${event.description}`, timestamp: Date.now() });
+            io.to(room.id).emit('promptSkillCheckRoll', {
+                rollerId: player.id,
+                rollerName: player.name,
+                title: event.name,
+                description: risk.description,
+                dice: 'd20',
+                bonus: player.stats?.[event.solveStat] || 0,
+                targetAC: scaledDC,
+                hasAdvantage: false
+            });
+
+        } else if (randomType === 'npcs') {
+            const eventData = {
+                id: `event_${Date.now()}`,
+                type: 'npc',
+                name: event.name,
+                description: event.description,
+                choices: []
+            };
+            if (event.interaction === 'trade') {
+                eventData.choices = [
+                    { label: 'Trade', description: `Browse wares (${Math.round((event.priceModifier || 1) * 100)}% prices)` },
+                    { label: 'Pass', description: 'Continue onward' }
+                ];
+            } else if (event.interaction === 'rescue') {
+                eventData.choices = [
+                    { label: 'Help', description: 'Aid the adventurer for a potential reward' },
+                    { label: 'Ignore', description: 'Leave them be' }
+                ];
+            } else {
+                eventData.choices = [
+                    { label: 'Investigate', description: 'Risk injury for potential rewards' },
+                    { label: 'Bypass', description: 'Avoid risk, no reward' }
+                ];
+            }
+            const playerSocket = io.sockets.sockets.get(player.id);
+            if (playerSocket) {
+                playerSocket.emit('dungeonEvent', eventData);
+            }
         }
     }
     
@@ -1758,19 +2036,24 @@ class GameManager {
             for (let i = 0; i < numToSpawn; i++) {
                 if (room.gameState.board.monsters.length >= maxMonstersOnBoard) break;
 
-                const tier = room.gameState.turnCount < 10 ? 'tier1' : (room.gameState.turnCount < 20 ? 'tier2' : 'tier3');
+                const depth = room.gameState.depth || 1;
+                const tier = depth <= 4 ? 'tier1' : (depth <= 9 ? 'tier2' : 'tier3');
                 const monsterCard = this.drawCardFromDeck(room.id, `monster.${tier}`);
                 if (monsterCard) {
-                    // ENHANCED: Scale monsters based on AVERAGE PARTY LEVEL (every 5 levels)
-                    const explorers = Object.values(room.players).filter(p => p.role === 'Explorer' && !p.isDowned);
-                    const avgLevel = explorers.length > 0 ? Math.floor(explorers.reduce((sum, p) => sum + (p.level || 1), 0) / explorers.length) : 1;
-                    const levelTier = Math.floor(avgLevel / 5); // 0-4=tier0, 5-9=tier1, 10-14=tier2, etc.
+                    const avgLevel = this._getAvgExplorerLevel(room);
+                    const levelTier = Math.floor(avgLevel / 5);
+                    // Depth-based scaling: monsters get tougher the deeper you go
+                    const depthScale = 1 + (Math.floor(depth / 3) * 0.15);
                     
-                    if (levelTier > 0) {
-                        const scalingMultiplier = 1 + (levelTier * 0.5); // 1.5x, 2.0x, 2.5x, etc.
-                        monsterCard.name = levelTier >= 2 ? `Dread ${monsterCard.name}` : `Elite ${monsterCard.name}`;
+                    if (levelTier > 0 || depth > 5) {
+                        const scalingMultiplier = Math.max(depthScale, 1 + (levelTier * 0.5));
+                        if (scalingMultiplier >= 2.0) {
+                            monsterCard.name = `Dread ${monsterCard.name}`;
+                        } else if (scalingMultiplier >= 1.3) {
+                            monsterCard.name = `Elite ${monsterCard.name}`;
+                        }
                         monsterCard.maxHp = Math.floor(monsterCard.maxHp * scalingMultiplier);
-                        monsterCard.attackBonus = Math.floor((monsterCard.attackBonus || 0) + levelTier);
+                        monsterCard.attackBonus = Math.floor((monsterCard.attackBonus || 0) + Math.floor(depth / 4));
                         monsterCard.xpValue = Math.floor(monsterCard.xpValue * scalingMultiplier);
                     }
                     // Daily challenge modifiers
@@ -2736,7 +3019,11 @@ class GameManager {
             }
             const total = roll + bonus;
             const targetAC = target.requiredRollToHit;
-            const outcome = total >= targetAC ? "Hit" : "Miss";
+            // Meta-perk: Critical Expert gives 5% extra crit chance (crit on 19-20)
+            const perkMults = this._getMetaPerkMultipliers(attacker);
+            const critThreshold = perkMults.critChanceBonus > 0 ? 19 : 20;
+            const isCriticalHit = roll >= critThreshold;
+            const outcome = (total >= targetAC || isCriticalHit) ? "Hit" : "Miss";
     
             let outcomeText = logParts.length > 0 ? `, ${logParts.join(', ')}` : '';
             room.chatLog.push({ type: 'combat', rollerName: attacker.name, rollerId: attacker.id, text: `${attacker.name} attacks ${target.name} with ${weapon.name}${outcomeText}... It's a ${outcome}! (Rolled ${roll} + ${bonus} vs AC ${targetAC})`, timestamp: Date.now() });
@@ -2745,7 +3032,7 @@ class GameManager {
     
         if (outcome === 'Hit') {
             room.gameState.lastAttackerId = attacker.id;
-                if (roll === 20 && weapon.name === 'Doomcleaver') {
+                if (isCriticalHit && weapon.name === 'Doomcleaver') {
                     const apCost = weapon.apCost || 2;
                     attacker.currentAp = Math.min(attacker.stats.maxAP, attacker.currentAp + apCost);
                     room.chatLog.push({ type: 'system-good', rollerName: attacker.name, text: `${attacker.name}'s Doomcleaver lands a savage chop! They regain ${apCost} AP and can attack again!`, timestamp: Date.now() });
@@ -3786,6 +4073,19 @@ class GameManager {
             if (leg) leg.weight *= (1 + pityBoost);
             if (myth) myth.weight *= (1 + pityBoost / 2);
         }
+        // Meta-perk: Lucky Charm gives +5% loot rarity (shift weight from common to higher tiers)
+        if (player) {
+            const perkMults = this._getMetaPerkMultipliers(player);
+            if (perkMults.lootRarityBonus > 0) {
+                const common = weights.find(w => w.key === 'common');
+                const uncommon = weights.find(w => w.key === 'uncommon');
+                const rare = weights.find(w => w.key === 'rare');
+                const shift = (common?.weight || 0) * perkMults.lootRarityBonus;
+                if (common) common.weight -= shift;
+                if (uncommon) uncommon.weight += shift * 0.5;
+                if (rare) rare.weight += shift * 0.5;
+            }
+        }
         
         const totalWeight = weights.reduce((sum, item) => sum + item.weight, 0);
         let random = Math.random() * totalWeight;
@@ -4401,56 +4701,64 @@ io.on('connection', (socket) => {
         if (!room || !choice) return;
         // Only the designated chooser can confirm the next room
         if (room.gameState.pathChooserId && socket.id !== room.gameState.pathChooserId) return;
-        room.chatLog.push({ type: 'system', text: `Next room: ${choice.type.toUpperCase()}`, timestamp: Date.now() });
+        const depth = room.gameState.depth || 1;
+        room.chatLog.push({ type: 'system', text: `Next room: ${choice.type.toUpperCase()} (Depth ${depth})`, timestamp: Date.now() });
         room.gameState.nextRooms = [];
         room.gameState.pathChooserId = null;
         room.gameState.lastPathChoiceRound = room.gameState.turnCount;
-        // Track recent room types to avoid immediate repeats
         const rt = room.gameState.recentRoomTypes || [];
         rt.push(choice.type);
-        if (rt.length > 3) rt.shift();
+        if (rt.length > 4) rt.shift();
         room.gameState.recentRoomTypes = rt;
-        // Minimal effect: spawn an event or give heal/merchant
-        if (choice.type === 'event') {
-            // target host for event
+
+        if (choice.type === 'boss') {
+            gameManager._spawnBossForRoom(room);
+            gameManager.emitGameState(room.id);
+            gameManager.moveToNextTurn(room);
+        } else if (choice.type === 'ambush') {
+            gameManager._spawnAmbush(room);
+            gameManager.emitGameState(room.id);
+            gameManager.moveToNextTurn(room);
+        } else if (choice.type === 'combat') {
+            // Combat rooms just advance turns - DM will spawn monsters
+            gameManager.moveToNextTurn(room);
+        } else if (choice.type === 'event') {
             const host = room.players[room.hostId];
             if (host) {
                 gameManager._triggerDungeonEvent(room, host);
-                // CRITICAL FIX: Don't advance turn immediately - let event resolution handle it
-                // The turn will be advanced when the event completes or if no skill checks are needed
                 setTimeout(() => {
-                    // Only advance turn if no skill challenge is active
                     if (!room.gameState.skillChallenge?.isActive) {
                         gameManager.moveToNextTurn(room);
                     }
-                }, 1000); // Give event time to set up skill challenges
+                }, 1000);
             } else {
                 gameManager.moveToNextTurn(room);
             }
         } else if (choice.type === 'rest') {
-            Object.values(room.players).forEach(p => { if (p.class) p.stats.currentHp = Math.min(p.stats.maxHp, p.stats.currentHp + 5); });
+            const healAmount = 5 + (depth || 0);
+            Object.values(room.players).forEach(p => {
+                if (p.class) {
+                    p.stats.currentHp = Math.min(p.stats.maxHp, p.stats.currentHp + healAmount);
+                }
+            });
+            room.chatLog.push({ type: 'system-good', text: `The party rests and heals ${healAmount} HP each.`, timestamp: Date.now() });
             gameManager.emitGameState(room.id);
             gameManager.moveToNextTurn(room);
         } else if (choice.type === 'shop') {
             gameManager.openShop(room);
-            // Do not advance the turn until the shop is closed by the chooser
         } else if (choice.type === 'treasure') {
-            // Path risk: a quick skill challenge to influence outcome
             const chooser = room.players[socket.id];
-            
-            // CRITICAL FIX: Prevent duplicate skill challenges
             if (room.gameState.skillChallenge?.isActive) {
                 console.log(`[ChoosePath] Skill challenge already active, skipping duplicate`);
                 return;
             }
-            
-            const dc = 12 + Math.floor(room.gameState.turnCount / 5);
+            const dc = 12 + Math.floor(depth / 3);
             const risk = {
                 skill: 'dex',
                 dc,
-                description: 'Navigate subtle traps to reach hidden treasure.',
-                success: { type: 'loot', text: 'You deftly evade traps and find extra treasure!' },
-                failure: { type: 'self_damage', value: '1d6', text: 'A trap springs! You are hurt.' },
+                description: `Navigate subtle traps to reach hidden treasure. (DC ${dc})`,
+                success: { type: 'loot', text: 'You deftly evade traps and find treasure!' },
+                failure: { type: 'self_damage', value: depth > 8 ? '2d6' : '1d6', text: 'A trap springs! You are hurt.' },
                 sourceTag: 'pathRisk'
             };
             room.gameState.skillChallenge = { isActive: true, details: risk, currentStage: 0, targetId: null };
@@ -4464,8 +4772,6 @@ io.on('connection', (socket) => {
                 targetAC: dc,
                 hasAdvantage: false
             });
-            // CRITICAL FIX: Don't advance turn until skill challenge completes
-            // The turn will be advanced in the skill challenge resolution
         }
     });
     socket.on('chatMessage', (data) => {
