@@ -47,10 +47,10 @@ class OfflineGameEngine {
                     usedAbilityThisTurn: false,
                     pendingAction: null,
                     isDowned: false,
+                    level: 1,
                     stats: this.getClassStats(playerClass, diff.playerStartingHp),
                     hand: [],
-                    equippedWeapon: null,
-                    equippedArmor: null,
+                    equipment: { weapon: null, armor: null },
                     statusEffects: []
                 }
             },
@@ -115,191 +115,198 @@ class OfflineGameEngine {
     giveStartingEquipment() {
         const player = this.gameState.players[this.playerId];
         
-        // Simple starting weapon
-        player.equippedWeapon = {
+        player.equipment = player.equipment || { weapon: null, armor: null };
+        
+        player.equipment.weapon = {
             id: 'starter-weapon',
             name: 'Iron Sword',
             type: 'Weapon',
+            apCost: 1,
             effect: { dice: '1d6', description: 'A basic weapon.' }
         };
         
-        // Simple starting armor
-        player.equippedArmor = {
+        player.equipment.armor = {
             id: 'starter-armor',
             name: 'Leather Armor',
             type: 'Armor',
-            effect: { shieldBonus: 1, description: 'Basic protection.' }
+            effect: { bonuses: { shieldBonus: 1 }, description: 'Basic protection.' }
         };
         
-        player.stats.ac = 10 + player.stats.dex + 1; // Base + DEX + armor
         player.stats.shieldBonus = 1;
         
-        // Starting items
         player.hand.push({
             id: 'potion-1',
-            name: 'Health Potion',
-            type: 'Item',
-            effect: { type: 'heal', dice: '2d4', description: 'Heal 2d4 HP.' }
+            name: 'Healing Potion',
+            type: 'Consumable',
+            category: 'Potion',
+            apCost: 1,
+            effect: { type: 'heal', dice: '2d4+2', target: 'self', description: 'Heals you for 2d4+2 HP.' }
         });
     }
 
-    // CRITICAL FIX: Add missing addChatLog function
-    addChatLog(type, message) {
-        this.gameState.chatLog.push({
-            type: type,
-            playerName: this.gameState.players[this.playerId]?.name || 'System',
-            text: message,
-            timestamp: Date.now()
-        });
-    }
+    // Monster templates aligned with server-side allMonsters from game-data.js
+    static MONSTER_TEMPLATES = {
+        tier1: [
+            { name: 'Goblin Archer', maxHp: 12, attackBonus: 4, requiredRollToHit: 13, damage: '1d6+2', xpValue: 10, stats: { str: 1, dex: 3, con: 1, int: 0, wis: 1, cha: 0 } },
+            { name: 'Skeleton Guard', maxHp: 15, attackBonus: 2, requiredRollToHit: 13, damage: '1d6', xpValue: 8, stats: { str: 1, dex: 2, con: 1, int: 0, wis: 0, cha: 0 } },
+            { name: 'Giant Spider', maxHp: 18, attackBonus: 3, requiredRollToHit: 12, damage: '1d8+1', xpValue: 12, stats: { str: 2, dex: 3, con: 2, int: 0, wis: 0, cha: 0 },
+                specialAbilities: [{ name: 'Venomous Bite', type: 'status', status: 'Poisoned', duration: 2 }] },
+            { name: 'Dire Wolf', maxHp: 20, attackBonus: 5, requiredRollToHit: 14, damage: '2d6+3', xpValue: 15, stats: { str: 3, dex: 2, con: 2, int: 0, wis: 1, cha: 0 } },
+            { name: 'Hobgoblin Soldier', maxHp: 22, attackBonus: 4, requiredRollToHit: 16, damage: '1d10+2', xpValue: 18, stats: { str: 3, dex: 2, con: 2, int: 1, wis: 1, cha: 1 } },
+            { name: 'Orc Brute', maxHp: 25, attackBonus: 5, requiredRollToHit: 15, damage: '2d8+3', xpValue: 20, stats: { str: 4, dex: 1, con: 3, int: 0, wis: 0, cha: 1 } },
+        ],
+        tier2: [
+            { name: 'Cave Bear', maxHp: 30, attackBonus: 6, requiredRollToHit: 14, damage: '2d10+4', xpValue: 25, stats: { str: 4, dex: 1, con: 3, int: 0, wis: 1, cha: 0 } },
+            { name: 'Gelatinous Cube', maxHp: 40, attackBonus: 4, requiredRollToHit: 12, damage: '2d6', xpValue: 30, stats: { str: 2, dex: 0, con: 4, int: 0, wis: 0, cha: 0 },
+                specialAbilities: [{ name: 'Engulf', type: 'status', status: 'Restrained', duration: 2 }] },
+        ],
+        tier3: [
+            { name: 'Stone Golem', maxHp: 50, attackBonus: 6, requiredRollToHit: 17, damage: '3d8+4', xpValue: 50, isBoss: true, stats: { str: 5, dex: 0, con: 5, int: 0, wis: 0, cha: 0 } },
+            { name: 'Lich Apprentice', maxHp: 45, attackBonus: 5, requiredRollToHit: 14, damage: '3d6', xpValue: 60, isBoss: true, stats: { str: 1, dex: 2, con: 2, int: 4, wis: 3, cha: 2 },
+                specialAbilities: [
+                    { name: 'Ray of Sickness', type: 'damage', damage: '2d8' },
+                    { name: 'Paralyzing Touch', type: 'status', status: 'Stunned', duration: 2 }
+                ] },
+        ]
+    };
 
-    // CRITICAL FIX: Enhanced monster spawning with special abilities
-    spawnMonster() {
-        const monsterTemplates = [
-            { 
-                name: 'Goblin', 
-                ac: 12, 
-                hp: 7, 
-                damage: '1d6',
-                attackBonus: 2,
-                specialAbilities: [
-                    { name: 'Sneak Attack', type: 'damage', damage: '1d4' }
-                ]
-            },
-            { 
-                name: 'Orc', 
-                ac: 13, 
-                hp: 15, 
-                damage: '1d8',
-                attackBonus: 3,
-                specialAbilities: [
-                    { name: 'Rage', type: 'damage', damage: '2d6' }
-                ]
-            },
-            { 
-                name: 'Troll', 
-                ac: 15, 
-                hp: 25, 
-                damage: '2d6',
-                attackBonus: 4,
-                specialAbilities: [
-                    { name: 'Regeneration', type: 'heal', healing: '1d8' },
-                    { name: 'Intimidating Roar', type: 'status', status: 'Frightened', duration: 2 }
-                ]
-            },
-            { 
-                name: 'Dragon', 
-                ac: 18, 
-                hp: 50, 
-                damage: '3d8',
-                attackBonus: 6,
-                specialAbilities: [
-                    { name: 'Fire Breath', type: 'damage', damage: '4d6' },
-                    { name: 'Wing Buffet', type: 'status', status: 'Prone', duration: 1 }
-                ]
-            }
-        ];
-        
-        // Choose monster based on turn count (harder monsters later)
-        let template;
-        if (this.gameState.turnCount < 5) {
-            template = monsterTemplates[0]; // Goblin
-        } else if (this.gameState.turnCount < 15) {
-            template = monsterTemplates[Math.floor(Math.random() * 2)]; // Goblin or Orc
-        } else if (this.gameState.turnCount < 30) {
-            template = monsterTemplates[Math.floor(Math.random() * 3)]; // Goblin, Orc, or Troll
+    _pickMonsterTemplate() {
+        const diff = this.gameState.difficulty;
+        const hpMult = diff?.monsterHpMult || 1.0;
+        const dmgMult = diff?.monsterDamageMult || 1.0;
+        const turn = this.gameState.turnCount || 0;
+
+        let pool;
+        if (turn < 8) {
+            pool = OfflineGameEngine.MONSTER_TEMPLATES.tier1;
+        } else if (turn < 20) {
+            pool = [...OfflineGameEngine.MONSTER_TEMPLATES.tier1, ...OfflineGameEngine.MONSTER_TEMPLATES.tier2];
         } else {
-            template = monsterTemplates[Math.floor(Math.random() * monsterTemplates.length)]; // Any monster
+            pool = [...OfflineGameEngine.MONSTER_TEMPLATES.tier1, ...OfflineGameEngine.MONSTER_TEMPLATES.tier2, ...OfflineGameEngine.MONSTER_TEMPLATES.tier3];
         }
-        
-        const monster = {
-            id: 'monster-' + Date.now(),
+
+        const template = pool[Math.floor(Math.random() * pool.length)];
+        const scaledHp = Math.max(1, Math.round(template.maxHp * hpMult));
+
+        return {
+            id: 'monster-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
             name: template.name,
-            ac: template.ac,
-            currentHp: template.hp,
-            maxHp: template.hp,
-            damage: template.damage,
+            type: 'Monster',
+            maxHp: scaledHp,
+            currentHp: scaledHp,
             attackBonus: template.attackBonus,
-            specialAbilities: template.specialAbilities || [],
+            requiredRollToHit: template.requiredRollToHit,
+            damage: template.damage,
+            xpValue: template.xpValue,
+            isBoss: template.isBoss || false,
+            stats: { ...template.stats },
+            specialAbilities: template.specialAbilities ? template.specialAbilities.map(a => ({ ...a })) : [],
             statusEffects: []
         };
-        
-        this.gameState.board.monsters.push(monster);
-        this.addChatLog('system', `${monster.name} appears!`);
     }
 
-    // CRITICAL FIX: Enhanced combat system with all online features
+    spawnMonster() {
+        if (!this.gameState) return;
+        const monster = this._pickMonsterTemplate();
+        this.gameState.board.monsters.push(monster);
+
+        if (this.gameState.grid) {
+            const occupied = new Set(
+                Object.values(this.gameState.grid.entities).map(e => `${e.x},${e.y}`)
+            );
+            for (let y = 0; y < this.gameState.grid.height; y++) {
+                for (let x = 0; x < this.gameState.grid.width; x++) {
+                    if (!occupied.has(`${x},${y}`)) {
+                        this.gameState.grid.entities[monster.id] = { x, y, type: 'monster' };
+                        break;
+                    }
+                }
+                if (this.gameState.grid.entities[monster.id]) break;
+            }
+        }
+
+        this.addChatLog('system', `A ${monster.name} appears!`);
+    }
+
     performAttack(weaponId, targetId) {
         const player = this.gameState.players[this.playerId];
         const target = this.gameState.board.monsters.find(m => m.id === targetId);
         
         if (!target) return;
         
-        // Get weapon
-        const weapon = player.equipment?.weapon || player.equippedWeapon || 
+        const weapon = player.equipment?.weapon ||
                       { id: 'unarmed', name: 'Unarmed Strike', apCost: 1, effect: { dice: '1d4' } };
         
-        if (player.currentAp < weapon.apCost) return;
+        const apCost = weapon.apCost || 1;
+        if (player.currentAp < apCost) return;
         
-        player.currentAp -= weapon.apCost;
+        player.currentAp -= apCost;
         
-        // Calculate attack bonus with all modifiers
-        const strBonus = Math.floor((player.stats.str - 10) / 2);
+        const primaryStat = this._getPrimaryStat(player);
+        const statBonus = player.stats[primaryStat] || 0;
         const hitBonus = player.stats.hitBonus || 0;
         const flankingBonus = this.calculateFlankingBonus(player, target);
-        const coverPenalty = target.positioning?.cover || 0;
         
-        // Roll attack with advantage/disadvantage
         const rollA = this.rollDice(1, 20);
         const rollB = this.rollDice(1, 20);
         const hasAdvantage = this.hasAdvantage(player, target);
-        const hasDisadvantage = coverPenalty >= 2;
+        const hasDisadvantage = false;
         
         let attackRoll = rollA;
         if (hasAdvantage && !hasDisadvantage) attackRoll = Math.max(rollA, rollB);
         if (hasDisadvantage && !hasAdvantage) attackRoll = Math.min(rollA, rollB);
         
-        const total = attackRoll + strBonus + hitBonus + flankingBonus - coverPenalty;
+        const totalBonus = statBonus + hitBonus + flankingBonus;
+        const total = attackRoll + totalBonus;
+        const targetAC = target.requiredRollToHit || 12;
         
-        this.addChatLog('roll', `${player.name} attacks ${target.name} with ${weapon.name}! Rolled ${attackRoll} + ${strBonus + hitBonus + flankingBonus} - ${coverPenalty} = ${total} vs AC ${target.ac}`);
+        this.addChatLog('roll', `${player.name} attacks ${target.name} with ${weapon.name}! Rolled ${attackRoll} + ${totalBonus} = ${total} vs AC ${targetAC}`);
         
-        if (total >= target.ac) {
-            // Hit! Calculate damage with all bonuses
+        const isCrit = attackRoll === 20;
+        
+        if (total >= targetAC || isCrit) {
             const damageRoll = this.rollDiceWithDetails(weapon.effect.dice);
             const damageBonus = player.stats.damageBonus || 0;
-            const totalDamage = damageRoll.total + damageBonus + flankingBonus;
+            let totalDamage = damageRoll.total + damageBonus;
             
-            // Apply damage
+            if (isCrit) {
+                const critExtra = this.rollDiceWithDetails(weapon.effect.dice);
+                totalDamage += critExtra.total;
+                this.addChatLog('combat-good', `CRITICAL HIT!`);
+            }
+            
             target.currentHp -= totalDamage;
             
             this.addChatLog('combat-good', `HIT! Dealt ${totalDamage} damage to ${target.name}!`);
-            
-            // Check for critical hit
-            if (attackRoll === 20) {
-                const critDamage = this.rollDiceWithDetails(weapon.effect.dice);
-                target.currentHp -= critDamage.total;
-                this.addChatLog('combat-good', `CRITICAL HIT! Extra ${critDamage.total} damage!`);
-            }
             
             if (target.currentHp <= 0) {
                 this.addChatLog('combat-good', `${target.name} is defeated!`);
                 this.gameState.board.monsters = this.gameState.board.monsters.filter(m => m.id !== targetId);
                 this.monstersKilled++;
+                this.gameState.monstersKilled = (this.gameState.monstersKilled || 0) + 1;
                 
-                // Gain XP
-                const xpGain = 10 + Math.floor(this.gameState.turnCount / 5);
-                player.stats.xp += xpGain;
+                const xpGain = target.xpValue || (10 + Math.floor(this.gameState.turnCount / 5));
+                player.stats.xp = (player.stats.xp || 0) + xpGain;
                 this.addChatLog('action-good', `${player.name} gains ${xpGain} XP!`);
                 this.checkLevelUp(player);
                 
-                // Spawn new monster
-                setTimeout(() => this.spawnMonster(), 1000);
+                if (this.gameState.board.monsters.length === 0) {
+                    setTimeout(() => this.spawnMonster(), 1000);
+                }
             }
         } else {
             this.addChatLog('combat-bad', `MISS!`);
         }
         
         this.updateGameState();
+    }
+
+    _getPrimaryStat(player) {
+        const primaryMap = {
+            Barbarian: 'str', Warrior: 'str', Rogue: 'dex',
+            Ranger: 'dex', Mage: 'int', Cleric: 'wis'
+        };
+        return primaryMap[player.class] || 'str';
     }
     
     // Helper methods for combat
@@ -524,44 +531,64 @@ class OfflineGameEngine {
         }
     }
 
-    // CRITICAL FIX: Add missing spell casting system
     castSpell(cardId, targetId) {
         const player = this.gameState.players[this.playerId];
         const spell = player.hand.find(c => c.id === cardId);
-        const target = this.gameState.board.monsters.find(m => m.id === targetId);
         
-        if (!spell || !target || player.currentAp < (spell.apCost || 1)) return;
+        if (!spell || player.currentAp < (spell.apCost || 1)) return;
         
         player.currentAp -= (spell.apCost || 1);
-        
-        // Remove spell from hand
         player.hand = player.hand.filter(c => c.id !== cardId);
         
         const effect = spell.effect;
         
         if (effect.type === 'damage' && effect.dice) {
+            const target = this.gameState.board.monsters.find(m => m.id === targetId);
+            if (!target) return;
+            
             const damageRoll = this.rollDiceWithDetails(effect.dice);
-            const intBonus = Math.floor((player.stats.int - 10) / 2);
-            const totalDamage = damageRoll.total + intBonus;
+            const spellPower = player.stats.spellPower || player.stats.int || 0;
+            const totalDamage = damageRoll.total + spellPower;
             
             target.currentHp -= totalDamage;
-            this.addChatLog('combat-good', `${player.name} casts ${spell.name} and deals ${totalDamage} damage to ${target.name}!`);
+            this.addChatLog('combat-good', `${player.name} casts ${spell.name} for ${totalDamage} damage to ${target.name}!`);
+            
+            if (effect.chanceToApplyStatus && Math.random() < effect.chanceToApplyStatus.chance) {
+                this.applyStatusEffect(target, effect.chanceToApplyStatus.status, 2);
+                this.addChatLog('combat', `${target.name} is ${effect.chanceToApplyStatus.status}!`);
+            }
             
             if (target.currentHp <= 0) {
                 this.addChatLog('combat-good', `${target.name} is defeated!`);
                 this.gameState.board.monsters = this.gameState.board.monsters.filter(m => m.id !== targetId);
                 this.monstersKilled++;
+                this.gameState.monstersKilled = (this.gameState.monstersKilled || 0) + 1;
+                const xpGain = target.xpValue || 10;
+                player.stats.xp = (player.stats.xp || 0) + xpGain;
+                this.addChatLog('action-good', `${player.name} gains ${xpGain} XP!`);
+                this.checkLevelUp(player);
             }
-        } else if (effect.type === 'heal') {
+        } else if (effect.type === 'heal' && effect.dice) {
             const healingRoll = this.rollDiceWithDetails(effect.dice);
-            const wisBonus = Math.floor((player.stats.wis - 10) / 2);
-            const totalHealing = healingRoll.total + wisBonus;
+            const healingPower = player.stats.healingPower || player.stats.wis || 0;
+            const totalHealing = healingRoll.total + healingPower;
             
             player.stats.currentHp = Math.min(player.stats.maxHp, player.stats.currentHp + totalHealing);
             this.addChatLog('action-good', `${player.name} casts ${spell.name} and heals for ${totalHealing} HP!`);
-        } else if (effect.type === 'utility' && effect.status) {
-            this.applyStatusEffect(target, effect.status, effect.duration || 2);
-            this.addChatLog('action', `${player.name} casts ${spell.name} - ${target.name} is ${effect.status}!`);
+        } else if (effect.type === 'control' && effect.status) {
+            const target = this.gameState.board.monsters.find(m => m.id === targetId);
+            if (target) {
+                this.applyStatusEffect(target, effect.status, effect.duration || 2);
+                this.addChatLog('action', `${player.name} casts ${spell.name} - ${target.name} is ${effect.status}!`);
+            }
+        } else if (effect.type === 'buff') {
+            if (effect.status) {
+                this.applyStatusEffect(player, effect.status, effect.duration || 2);
+            }
+            if (effect.bonuses?.shieldBonus) {
+                player.stats.shieldHp = (player.stats.shieldHp || 0) + effect.bonuses.shieldBonus;
+            }
+            this.addChatLog('action-good', `${player.name} casts ${spell.name}!`);
         }
         
         this.updateGameState();
@@ -584,26 +611,29 @@ class OfflineGameEngine {
         this.updateGameState();
     }
     
-    // CRITICAL FIX: Add missing equipment system
     equipItem(cardId) {
         const player = this.gameState.players[this.playerId];
         const item = player.hand.find(c => c.id === cardId);
         
-        if (!item || player.currentAp < 1) return;
+        if (!item) return;
         
-        player.currentAp -= 1;
-        
-        // Remove from hand
         player.hand = player.hand.filter(c => c.id !== cardId);
+        player.equipment = player.equipment || { weapon: null, armor: null };
         
-        // Equip based on type
         if (item.type === 'Weapon') {
-            player.equipment = player.equipment || {};
+            if (player.equipment.weapon) {
+                player.hand.push(player.equipment.weapon);
+            }
             player.equipment.weapon = item;
             this.addChatLog('action', `${player.name} equips ${item.name}!`);
         } else if (item.type === 'Armor') {
-            player.equipment = player.equipment || {};
+            if (player.equipment.armor) {
+                player.hand.push(player.equipment.armor);
+            }
             player.equipment.armor = item;
+            if (item.effect?.bonuses?.shieldBonus) {
+                player.stats.shieldBonus = item.effect.bonuses.shieldBonus;
+            }
             this.addChatLog('action', `${player.name} equips ${item.name}!`);
         }
         
@@ -674,59 +704,102 @@ class OfflineGameEngine {
         const player = this.gameState.players[this.playerId];
         const item = player.hand.find(i => i.id === itemId);
         
-        if (!item || player.currentAp < 1) return;
+        if (!item) return;
+        const apCost = item.apCost || 1;
+        if (player.currentAp < apCost) return;
         
-        player.currentAp -= 1;
+        player.currentAp -= apCost;
         
-        if (item.effect.type === 'heal') {
-            const healing = this.rollDice(2, 4); // Health potion
+        const effect = item.effect;
+        if (effect.type === 'heal' && effect.dice) {
+            const healRoll = this.rollDiceWithDetails(effect.dice);
+            const healing = healRoll.total;
             player.stats.currentHp = Math.min(player.stats.maxHp, player.stats.currentHp + healing);
             this.addChatLog('action-good', `${player.name} uses ${item.name} and heals for ${healing} HP!`);
-            
-            // Remove item
+            player.hand = player.hand.filter(i => i.id !== itemId);
+        } else if (effect.type === 'damage' && effect.dice) {
+            const target = this.gameState.board.monsters[0];
+            if (target) {
+                const dmgRoll = this.rollDiceWithDetails(effect.dice);
+                target.currentHp -= dmgRoll.total;
+                this.addChatLog('combat-good', `${player.name} uses ${item.name} for ${dmgRoll.total} damage!`);
+                if (effect.status) {
+                    this.applyStatusEffect(target, effect.status, effect.duration || 2);
+                }
+                player.hand = player.hand.filter(i => i.id !== itemId);
+            }
+        } else if (effect.type === 'buff' && effect.status) {
+            this.applyStatusEffect(player, effect.status, effect.duration || 2);
+            this.addChatLog('action-good', `${player.name} uses ${item.name}!`);
+            player.hand = player.hand.filter(i => i.id !== itemId);
+        } else if (effect.type === 'utility') {
+            if (effect.utilityType === 'add_shield_hp' && effect.value) {
+                player.stats.shieldHp = (player.stats.shieldHp || 0) + effect.value;
+                this.addChatLog('action-good', `${player.name} uses ${item.name} and gains ${effect.value} Shield HP!`);
+            } else if (effect.status === 'Cure Poison') {
+                player.statusEffects = (player.statusEffects || []).filter(e => e.name !== 'Poisoned');
+                this.addChatLog('action-good', `${player.name} uses ${item.name} and is cured of poison!`);
+            } else if (effect.status) {
+                const target = this.gameState.board.monsters[0];
+                if (target) {
+                    this.applyStatusEffect(target, effect.status, effect.duration || 3);
+                    this.addChatLog('action', `${player.name} uses ${item.name} on ${target.name}!`);
+                }
+            }
+            player.hand = player.hand.filter(i => i.id !== itemId);
+        } else if (effect.type === 'control' && effect.status) {
+            const target = this.gameState.board.monsters[0];
+            if (target) {
+                this.applyStatusEffect(target, effect.status, effect.duration || 1);
+                this.addChatLog('action', `${player.name} uses ${item.name} - ${target.name} is ${effect.status}!`);
+            }
             player.hand = player.hand.filter(i => i.id !== itemId);
         }
         
         this.updateGameState();
     }
     
-    // CRITICAL FIX: Add missing level up and specialization system
+    _xpToNextLevel(level) {
+        if (level <= 1) return 25;
+        return Math.floor(25 * Math.pow(1.5, level - 1));
+    }
+
     checkLevelUp(player) {
-        const xpNeeded = player.level * 100; // Simple XP curve
-        if (player.stats.xp >= xpNeeded) {
-            player.level++;
+        const currentLevel = player.stats.level || player.level || 1;
+        const xpNeeded = this._xpToNextLevel(currentLevel);
+        
+        if ((player.stats.xp || 0) >= xpNeeded) {
             player.stats.xp -= xpNeeded;
+            const newLevel = currentLevel + 1;
+            player.stats.level = newLevel;
+            player.level = newLevel;
             
-            // Increase stats
-            const statIncrease = Math.floor(Math.random() * 6) + 1; // Random stat to increase
-            const stats = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
-            const statName = stats[statIncrease - 1];
-            player.stats[statName]++;
+            const primary = this._getPrimaryStat(player);
+            player.stats[primary] = (player.stats[primary] || 0) + 1;
             
-            this.addChatLog('action-good', `${player.name} reached Level ${player.level} and increased their ${statName.toUpperCase()}!`);
+            const hpGain = (player.stats.con || 2) + this.rollDice(1, 4);
+            player.stats.maxHp = (player.stats.maxHp || 20) + hpGain;
+            player.stats.currentHp = player.stats.maxHp;
             
-            // Check for specialization unlock at levels 3, 5, 7
-            if ([3, 5, 7].includes(player.level)) {
+            this.addChatLog('action-good', `${player.name} reached Level ${newLevel}! +${hpGain} Max HP, +1 ${primary.toUpperCase()}!`);
+            
+            if ([3, 5, 7].includes(newLevel)) {
                 this.promptSpecializationChoice(player);
             }
-            
-            // Recalculate stats
-            this.recalculatePlayerStats(player);
         }
     }
     
     promptSpecializationChoice(player) {
-        // Simplified specialization system for offline mode
-        const specializations = {
-            'Barbarian': ['Berserker', 'Totem Warrior'],
-            'Ranger': ['Beast Master', 'Hunter'],
-            'Rogue': ['Assassin', 'Thief'],
-            'Warrior': ['Champion', 'Battle Master'],
-            'Wizard': ['Evocation', 'Abjuration'],
-            'Cleric': ['Life Domain', 'War Domain']
+        const specTrees = {
+            Barbarian: ['Berserker', 'Defender', 'Shaman'],
+            Rogue: ['Assassin', 'Trickster', 'Scout'],
+            Mage: ['Elementalist', 'Enchanter', 'Scholar'],
+            Warrior: ['WeaponMaster', 'Guardian', 'Commander'],
+            Cleric: ['DivineHealer', 'Crusader', 'Priest'],
+            Ranger: ['Marksman', 'BeastMaster', 'Tracker']
         };
         
-        const classSpecs = specializations[player.class] || ['Generalist'];
+        const classSpecs = specTrees[player.class] || ['Generalist'];
         const randomSpec = classSpecs[Math.floor(Math.random() * classSpecs.length)];
         
         if (!player.specializations) player.specializations = {};
@@ -734,51 +807,45 @@ class OfflineGameEngine {
         player.specializations[tier] = { branch: randomSpec, tier };
         
         this.addChatLog('action-good', `${player.name} gains specialization: ${randomSpec}!`);
-        
-        // Apply specialization bonuses
         this.applySpecializationBonuses(player, randomSpec, tier);
     }
     
     applySpecializationBonuses(player, specialization, tier) {
         const bonuses = {
-            'Berserker': { str: 1, damageBonus: 2 },
-            'Totem Warrior': { con: 1, shieldBonus: 1 },
-            'Beast Master': { wis: 1, companionBonus: true },
-            'Hunter': { dex: 1, hitBonus: 2 },
-            'Assassin': { dex: 1, critBonus: 1 },
-            'Thief': { dex: 1, movementBonus: 1 },
-            'Champion': { str: 1, critRange: 1 },
-            'Battle Master': { str: 1, tacticalBonus: 2 },
-            'Evocation': { int: 1, spellDamage: 2 },
-            'Abjuration': { int: 1, shieldBonus: 2 },
-            'Life Domain': { wis: 1, healingBonus: 2 },
-            'War Domain': { str: 1, weaponBonus: 1 },
-            'Generalist': { all: 1 }
+            Berserker:     { damageBonus: 2 },
+            Defender:      { maxHp: 4 },
+            Shaman:        { damageBonus: 1, healingPower: 1 },
+            Assassin:      { damageBonus: 2 },
+            Trickster:     { spellPower: 1 },
+            Scout:         { dex: 1 },
+            Elementalist:  { spellPower: 2 },
+            Enchanter:     { int: 1 },
+            Scholar:       { healingPower: 2 },
+            WeaponMaster:  { hitBonus: 1, damageBonus: 1 },
+            Guardian:      { shieldBonus: 2 },
+            Commander:     { healingPower: 1, damageBonus: 1 },
+            DivineHealer:  { healingPower: 2, wis: 1 },
+            Crusader:      { damageBonus: 2, str: 1 },
+            Priest:        { wis: 1, healingPower: 1 },
+            Marksman:      { hitBonus: 1, dex: 1 },
+            BeastMaster:   { wis: 1 },
+            Tracker:       { wis: 1, dex: 1 },
         };
         
-        const bonus = bonuses[specialization] || { all: 1 };
-        Object.keys(bonus).forEach(stat => {
-            if (stat === 'all') {
-                // Increase all stats by 1
-                ['str', 'dex', 'con', 'int', 'wis', 'cha'].forEach(s => {
-                    player.stats[s] = (player.stats[s] || 10) + 1;
-                });
-            } else {
-                player.stats[stat] = (player.stats[stat] || 10) + bonus[stat];
-            }
-        });
-        
-        this.recalculatePlayerStats(player);
+        const bonus = bonuses[specialization] || {};
+        for (const [key, value] of Object.entries(bonus)) {
+            player.stats[key] = (player.stats[key] || 0) + (value * tier);
+        }
     }
     
     recalculatePlayerStats(player) {
-        // Recalculate derived stats based on base stats
-        player.stats.maxHp = Math.max(1, player.stats.con * 2 + player.level * 2);
+        const baseHp = player.stats.baseMaxHp || 20;
+        const level = player.stats.level || player.level || 1;
+        player.stats.maxHp = baseHp + (player.stats.con * 2) + ((level - 1) * 3);
         player.stats.currentHp = Math.min(player.stats.currentHp, player.stats.maxHp);
-        player.stats.ac = 10 + Math.floor((player.stats.dex - 10) / 2);
-        player.stats.hitBonus = Math.floor((player.stats.str - 10) / 2);
-        player.stats.damageBonus = Math.floor((player.stats.str - 10) / 2);
-        player.stats.shieldBonus = Math.floor((player.stats.con - 10) / 2);
+
+        const armorBonus = player.equipment?.armor?.effect?.bonuses?.shieldBonus || 0;
+        player.stats.shieldBonus = armorBonus + (player.stats.con > 3 ? 1 : 0);
     }
     
     // CRITICAL FIX: Add missing updateGameState function
@@ -831,45 +898,47 @@ class OfflineGameEngine {
         const monsterBonus = monster.attackBonus || 2;
         const total = attackRoll + monsterBonus;
         
-        const targetAC = player.stats.ac + (player.stats.shieldHp > 0 ? player.stats.shieldBonus : 0);
+        const baseAC = 10 + (player.stats.dex || 0);
+        const shieldHP = player.stats.shieldHp || 0;
+        const targetAC = baseAC + (shieldHP > 0 ? (player.stats.shieldBonus || 0) : 0);
+        
+        const isCrit = attackRoll === 20;
         
         this.addChatLog('combat', `${monster.name} attacks ${player.name}! Rolled ${attackRoll} + ${monsterBonus} = ${total} vs AC ${targetAC}`);
         
-        if (total >= targetAC) {
+        if (total >= targetAC || isCrit) {
             const damageRoll = this.rollDiceWithDetails(monster.damage || '1d6');
-            const totalDamage = damageRoll.total;
+            let totalDamage = damageRoll.total;
             
-            // Apply to shield first
+            if (isCrit) {
+                const critExtra = this.rollDiceWithDetails(monster.damage || '1d6');
+                totalDamage += critExtra.total;
+                this.addChatLog('combat-bad', `CRITICAL HIT!`);
+            }
+            
             if (player.stats.shieldHp > 0) {
-                const shieldDamage = Math.min(totalDamage, player.stats.shieldHp);
-                player.stats.shieldHp -= shieldDamage;
-                const remainingDamage = totalDamage - shieldDamage;
+                const shieldAbsorb = Math.min(totalDamage, player.stats.shieldHp);
+                player.stats.shieldHp -= shieldAbsorb;
+                const overflow = totalDamage - shieldAbsorb;
                 
-                if (remainingDamage > 0) {
-                    player.stats.currentHp -= remainingDamage;
+                if (overflow > 0) {
+                    player.stats.currentHp -= overflow;
                 }
-                
-                this.addChatLog('combat-bad', `HIT! ${totalDamage} damage (absorbed ${shieldDamage} from shield)!`);
+                this.addChatLog('combat-bad', `HIT! ${totalDamage} damage (shield absorbed ${shieldAbsorb})!`);
             } else {
                 player.stats.currentHp -= totalDamage;
-                this.addChatLog('combat-bad', `HIT! Dealt ${totalDamage} damage to ${player.name}!`);
+                this.addChatLog('combat-bad', `HIT! ${totalDamage} damage to ${player.name}!`);
             }
             
-            // Check for critical hit
-            if (attackRoll === 20) {
-                const critDamage = this.rollDiceWithDetails(monster.damage || '1d6');
-                player.stats.currentHp -= critDamage.total;
-                this.addChatLog('combat-bad', `CRITICAL HIT! Extra ${critDamage.total} damage!`);
-            }
-            
-            // Check if player is defeated
             if (player.stats.currentHp <= 0) {
+                player.stats.currentHp = 0;
+                player.isDowned = true;
                 this.gameState.phase = 'game_over';
                 this.gameState.winner = 'Monsters';
-                this.addChatLog('system-bad', 'You have been defeated!');
+                this.addChatLog('system-bad', `${player.name} has been defeated! Game Over.`);
             }
         } else {
-            this.addChatLog('combat', `MISS!`);
+            this.addChatLog('combat', `${monster.name} misses!`);
         }
     }
     
@@ -1025,174 +1094,53 @@ class OfflineGameEngine {
         window.offlineGameEngine = this;
     }
     
+    // --- Dev Tools ---
     gainXp(amount) {
         if (!this.gameState || !this.gameState.players[this.playerId]) return;
-        
         const player = this.gameState.players[this.playerId];
-        const currentXp = player.stats.xp || 0;
-        const newXp = currentXp + amount;
-        
-        player.stats.xp = newXp;
-        
-        // Check for level up
-        const requiredXp = this.getRequiredXpForLevel(player.stats.level || 1);
-        if (newXp >= requiredXp) {
-            this.triggerLevelUp();
-        }
-        
-        this.updateUI();
-    }
-    
-    triggerLevelUp() {
-        if (!this.gameState || !this.gameState.players[this.playerId]) return;
-        
-        const player = this.gameState.players[this.playerId];
-        const currentLevel = player.stats.level || 1;
-        const newLevel = currentLevel + 1;
-        
-        player.stats.level = newLevel;
-        player.stats.xp = 0; // Reset XP after level up
-        
-        // Increase max HP
-        const hpIncrease = 2;
-        player.stats.maxHp = (player.stats.maxHp || 20) + hpIncrease;
-        player.stats.currentHp = player.stats.maxHp; // Full heal on level up
-        
-        // Add to chat log
-        this.gameState.chatLog.push({
-            type: 'system',
-            text: `${player.name} leveled up to level ${newLevel}!`,
-            timestamp: Date.now()
-        });
-        
-        this.updateUI();
+        player.stats.xp = (player.stats.xp || 0) + amount;
+        this.checkLevelUp(player);
+        this.updateGameState();
     }
     
     setMaxLevel() {
         if (!this.gameState || !this.gameState.players[this.playerId]) return;
-        
         const player = this.gameState.players[this.playerId];
-        player.stats.level = 10;
-        player.stats.xp = 0;
-        player.stats.maxHp = 40; // Max level HP
-        player.stats.currentHp = player.stats.maxHp;
-        
-        this.gameState.chatLog.push({
-            type: 'system',
-            text: `${player.name} reached maximum level!`,
-            timestamp: Date.now()
-        });
-        
-        this.updateUI();
+        while ((player.stats.level || player.level || 1) < 10) {
+            player.stats.xp = this._xpToNextLevel(player.stats.level || player.level || 1);
+            this.checkLevelUp(player);
+        }
+        this.addChatLog('system', `${player.name} reached maximum level!`);
+        this.updateGameState();
     }
     
     addGold(amount) {
         if (!this.gameState || !this.gameState.players[this.playerId]) return;
-        
         const player = this.gameState.players[this.playerId];
         player.gold = (player.gold || 0) + amount;
-        
-        this.gameState.chatLog.push({
-            type: 'system',
-            text: `${player.name} gained ${amount} gold!`,
-            timestamp: Date.now()
-        });
-        
-        this.updateUI();
+        this.addChatLog('system', `${player.name} gained ${amount} gold!`);
+        this.updateGameState();
     }
     
-    spawnMonster() {
-        if (!this.gameState) return;
-        
-        // Spawn a random monster
-        const monsterTypes = ['Goblin', 'Orc', 'Skeleton', 'Spider', 'Wolf'];
-        const randomType = monsterTypes[Math.floor(Math.random() * monsterTypes.length)];
-        
-        const monster = {
-            id: `monster_${Date.now()}`,
-            name: randomType,
-            type: 'monster',
-            stats: {
-                level: 1,
-                currentHp: 15,
-                maxHp: 15,
-                ac: 10,
-                damage: 4
-            },
-            position: { x: 1, y: 1 } // Spawn in front row
-        };
-        
-        this.gameState.board.monsters.push(monster);
-        
-        this.gameState.chatLog.push({
-            type: 'system',
-            text: `A ${randomType} appeared!`,
-            timestamp: Date.now()
-        });
-        
-        this.updateUI();
+    devSpawnMonster() {
+        this.spawnMonster();
+        this.updateGameState();
     }
     
     fullHeal() {
         if (!this.gameState || !this.gameState.players[this.playerId]) return;
-        
         const player = this.gameState.players[this.playerId];
         player.stats.currentHp = player.stats.maxHp;
         player.isDowned = false;
-        
-        this.gameState.chatLog.push({
-            type: 'system',
-            text: `${player.name} was fully healed!`,
-            timestamp: Date.now()
-        });
-        
-        this.updateUI();
-    }
-    
-    triggerSpecializationChoice() {
-        if (!this.gameState || !this.gameState.players[this.playerId]) return;
-        
-        const player = this.gameState.players[this.playerId];
-        if (player.stats.level >= 3 && !player.specialization) {
-            // Trigger specialization modal
-            this.gameState.chatLog.push({
-                type: 'system',
-                text: `${player.name} can now choose a specialization!`,
-                timestamp: Date.now()
-            });
-            
-            // In a real implementation, this would trigger the specialization modal
-            // For now, just add to chat log
-            this.updateUI();
-        }
+        this.gameState.phase = 'playing';
+        this.addChatLog('system', `${player.name} was fully healed!`);
+        this.updateGameState();
     }
     
     toggleGodMode() {
         this.godMode = !this.godMode;
-        
-        this.gameState.chatLog.push({
-            type: 'system',
-            text: `God mode ${this.godMode ? 'enabled' : 'disabled'}!`,
-            timestamp: Date.now()
-        });
-        
-        this.updateUI();
-    }
-    
-    getRequiredXpForLevel(level) {
-        // Simple XP curve: 100 * level
-        return level * 100;
-    }
-    
-    updateUI() {
-        // Trigger UI update if in offline mode
-        if (this.isOfflineMode && typeof renderUI === 'function') {
-            try {
-                renderUI();
-            } catch (error) {
-                console.error('[OfflineGameEngine] Error updating UI:', error);
-            }
-        }
+        this.addChatLog('system', `God mode ${this.godMode ? 'enabled' : 'disabled'}!`);
+        this.updateGameState();
     }
 
     saveGame() {
@@ -1203,7 +1151,7 @@ class OfflineGameEngine {
                 gameState: this.gameState,
                 monstersKilled: this.monstersKilled,
                 timestamp: Date.now(),
-                version: '3.0.0'
+                version: '4.1.1'
             };
             
             localStorage.setItem('qc_offline_save', JSON.stringify(saveData));

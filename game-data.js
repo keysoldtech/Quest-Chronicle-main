@@ -479,8 +479,8 @@ const monsterTiers = {
 // --- 7.5. DYNAMIC DUNGEON EVENTS ---
 const dungeonEvents = {
     ambushes: [
-        { name: 'Goblin Ambush', description: 'Goblins attack from the shadows!', enemies: ['Goblin', 'Goblin'], surprise: true },
-        { name: 'Wolf Pack', description: 'A pack of wolves surrounds you!', enemies: ['Wolf', 'Wolf', 'Wolf'], surprise: true },
+        { name: 'Goblin Ambush', description: 'Goblins attack from the shadows!', enemies: ['Goblin Archer', 'Goblin Archer'], surprise: true },
+        { name: 'Wolf Pack', description: 'A pack of wolves surrounds you!', enemies: ['Dire Wolf', 'Dire Wolf', 'Dire Wolf'], surprise: true },
         { name: 'Bandit Crossfire', description: 'Arrows rain from cover!', enemies: ['Goblin Archer', 'Goblin Archer'], surprise: true }
     ],
     traps: [
@@ -662,6 +662,7 @@ module.exports = {
     worldEventCards,
     environmentalCards,
     partyEventCards,
+    allMonsters,
     monsterTiers,
     dungeonEvents,
     synergies,
