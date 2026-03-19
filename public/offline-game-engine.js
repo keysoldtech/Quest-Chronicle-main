@@ -1151,7 +1151,7 @@ class OfflineGameEngine {
                 gameState: this.gameState,
                 monstersKilled: this.monstersKilled,
                 timestamp: Date.now(),
-                version: '4.1.1'
+                version: '4.2.0'
             };
             
             localStorage.setItem('qc_offline_save', JSON.stringify(saveData));

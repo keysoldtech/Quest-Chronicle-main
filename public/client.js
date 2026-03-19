@@ -379,22 +379,65 @@ const NotificationManager = {
 const accountManager = {
     data: {
         xp: 0,
-        upgrades: {}, // { Barbarian: { str: 1, con: 0 }, Mage: { int: 1 } }
+        essence: 0,
+        upgrades: {},
         unlockedLegacyItems: [],
-        savedLoadouts: []
+        savedLoadouts: [],
+        achievements: {},
+        metaPerks: {},
+        stats: {
+            monstersDefeated: 0,
+            bossesDefeated: 0,
+            dungeonsCompleted: 0,
+            multiplayerRuns: 0,
+            legendaryItemsFound: 0,
+            synergiesTriggered: 0,
+            flankingBonuses: 0,
+            gamesPlayed: 0,
+            highestRound: 0,
+            fastestRun: Infinity
+        }
+    },
+
+    achievementDefs: {
+        firstBlood:    { name: 'First Blood',       description: 'Defeat your first monster',        icon: 'swords',        reward: 10,  check: s => s.monstersDefeated >= 1 },
+        slayer:        { name: 'Monster Slayer',     description: 'Defeat 50 monsters',              icon: 'skull',         reward: 50,  check: s => s.monstersDefeated >= 50 },
+        legendary:     { name: 'Legendary Hunter',   description: 'Find 5 legendary items',          icon: 'diamond',       reward: 100, check: s => s.legendaryItemsFound >= 5 },
+        tactician:     { name: 'Tactician',          description: 'Trigger 10 synergies',            icon: 'auto_awesome',  reward: 25,  check: s => s.synergiesTriggered >= 10 },
+        masterFlanker: { name: 'Master Flanker',     description: 'Get 50 flanking bonuses',         icon: 'target',        reward: 75,  check: s => s.flankingBonuses >= 50 },
+        survivor:      { name: 'Survivor',           description: 'Complete 10 dungeons',            icon: 'shield_person', reward: 100, check: s => s.dungeonsCompleted >= 10 },
+        bossSlayer:    { name: 'Boss Slayer',        description: 'Defeat your first boss',          icon: 'castle',        reward: 200, check: s => s.bossesDefeated >= 1 },
+        teamPlayer:    { name: 'Team Player',        description: 'Complete 5 multiplayer runs',     icon: 'groups',        reward: 75,  check: s => s.multiplayerRuns >= 5 },
+        veteran:       { name: 'Veteran',            description: 'Play 25 games',                   icon: 'military_tech', reward: 50,  check: s => s.gamesPlayed >= 25 },
+    },
+
+    metaPerkDefs: {
+        startingGold:    { name: 'Wealthy Start',     description: 'Start with +50 gold',       icon: 'paid',       cost: 50,  tier: 1 },
+        extraHp:         { name: 'Vitality',           description: 'Start with +5 max HP',      icon: 'favorite',   cost: 50,  tier: 1 },
+        luckyStart:      { name: 'Lucky Charm',        description: '+5% loot rarity',           icon: 'casino',     cost: 50,  tier: 1 },
+        fastLearner:     { name: 'Fast Learner',       description: '+10% XP gain',              icon: 'school',     cost: 100, tier: 2 },
+        combatant:       { name: 'Combat Training',    description: '+1 damage',                 icon: 'swords',     cost: 100, tier: 2 },
+        masterTactician: { name: 'Master Tactician',   description: 'Synergies +50% stronger',   icon: 'psychology', cost: 200, tier: 3 },
+        criticalExpert:  { name: 'Critical Expert',    description: '+5% crit chance',           icon: 'emergency',  cost: 200, tier: 3 },
     },
 
     load() {
         try {
             const savedData = localStorage.getItem('qc_accountData');
             if (savedData) {
-                this.data = JSON.parse(savedData);
+                const parsed = JSON.parse(savedData);
+                this.data = {
+                    ...this.data,
+                    ...parsed,
+                    stats: { ...this.data.stats, ...(parsed.stats || {}) },
+                    achievements: parsed.achievements || {},
+                    metaPerks: parsed.metaPerks || {},
+                };
                 this.data.unlockedLegacyItems = this.data.unlockedLegacyItems || [];
                 this.data.savedLoadouts = this.data.savedLoadouts || [];
             }
         } catch (e) {
             console.error("Failed to load account data:", e);
-            this.data = { xp: 0, upgrades: {}, unlockedLegacyItems: [], savedLoadouts: [] };
         }
     },
 
@@ -449,9 +492,78 @@ const accountManager = {
             showToast('No loadout in that slot.', 'error');
             return false;
         }
-        // FUTURE: emit a request to server to equip equivalent items if present
         showToast(`Applied loadout for ${loadout.class}.`, 'info');
         return true;
+    },
+
+    trackStat(statName, amount = 1) {
+        if (!this.data.stats) this.data.stats = {};
+        this.data.stats[statName] = (this.data.stats[statName] || 0) + amount;
+        this.checkAchievements();
+        this.save();
+    },
+
+    recordRunEnd(turnCount, monstersKilled, victory, isMultiplayer) {
+        this.data.stats.gamesPlayed = (this.data.stats.gamesPlayed || 0) + 1;
+        this.data.stats.monstersDefeated = (this.data.stats.monstersDefeated || 0) + monstersKilled;
+        if (turnCount > (this.data.stats.highestRound || 0)) {
+            this.data.stats.highestRound = turnCount;
+        }
+        if (victory) {
+            this.data.stats.dungeonsCompleted = (this.data.stats.dungeonsCompleted || 0) + 1;
+        }
+        if (isMultiplayer) {
+            this.data.stats.multiplayerRuns = (this.data.stats.multiplayerRuns || 0) + 1;
+        }
+        this.checkAchievements();
+        this.save();
+    },
+
+    checkAchievements() {
+        const newlyUnlocked = [];
+        for (const [id, def] of Object.entries(this.achievementDefs)) {
+            if (this.data.achievements[id]) continue;
+            if (def.check(this.data.stats)) {
+                this.data.achievements[id] = { unlockedAt: Date.now() };
+                this.data.essence = (this.data.essence || 0) + def.reward;
+                newlyUnlocked.push(def);
+            }
+        }
+        if (newlyUnlocked.length > 0) {
+            this.save();
+            for (const ach of newlyUnlocked) {
+                showToast(`Achievement Unlocked: ${ach.name}! (+${ach.reward} Essence)`, 'success', 5000);
+            }
+        }
+        return newlyUnlocked;
+    },
+
+    purchaseMetaPerk(perkId) {
+        const def = this.metaPerkDefs[perkId];
+        if (!def) return false;
+        if (this.data.metaPerks[perkId]) {
+            showToast('Already unlocked!', 'info');
+            return false;
+        }
+        if ((this.data.essence || 0) < def.cost) {
+            showToast(`Not enough Essence. Need ${def.cost}, have ${this.data.essence || 0}.`, 'error');
+            return false;
+        }
+        this.data.essence -= def.cost;
+        this.data.metaPerks[perkId] = { unlockedAt: Date.now() };
+        this.save();
+        showToast(`Unlocked: ${def.name}!`, 'success');
+        return true;
+    },
+
+    getActiveMetaPerks() {
+        const active = {};
+        for (const [id, perkData] of Object.entries(this.data.metaPerks || {})) {
+            if (perkData && this.metaPerkDefs[id]) {
+                active[id] = this.metaPerkDefs[id];
+            }
+        }
+        return active;
     }
 };
 
@@ -2536,7 +2648,8 @@ function showGameOverModal({ winner, runXp, bonusXp }) {
     const title = get('game-over-title');
     const message = get('game-over-message');
     
-    if (winner === 'Explorers') {
+    const isVictory = winner === 'Explorers';
+    if (isVictory) {
         title.textContent = "Victory!";
         message.textContent = "You have overcome the challenges and completed your quest!";
     } else {
@@ -2548,6 +2661,16 @@ function showGameOverModal({ winner, runXp, bonusXp }) {
     get('game-over-run-xp').textContent = runXp;
     get('game-over-bonus-xp').textContent = bonusXp;
     get('game-over-total-xp').textContent = totalXp;
+    
+    const myPlayer = currentRoomState?.players?.[myId];
+    const turnCount = currentRoomState?.gameState?.turnCount || 0;
+    const monstersKilled = myPlayer?.enemiesDefeated || 0;
+    const isMultiplayer = Object.keys(currentRoomState?.players || {}).filter(
+        id => !currentRoomState.players[id].isNpc
+    ).length > 1;
+
+    accountManager.addXp(totalXp);
+    accountManager.recordRunEnd(turnCount, monstersKilled, isVictory, isMultiplayer);
     
     get('game-over-modal').classList.remove('hidden');
 }
@@ -3374,33 +3497,54 @@ const helpContent = [
 function renderLegacyScreen(activeClass = clientState.activeLegacyClassTab) {
     get('legacy-xp-total').textContent = accountManager.data.xp;
     
+    const essenceEl = get('legacy-essence-total');
+    if (essenceEl) essenceEl.textContent = accountManager.data.essence || 0;
+    
     const navContainer = get('legacy-class-nav');
     const contentContainer = get('legacy-class-content');
     if (!navContainer || !contentContainer) return;
 
     const classToShow = activeClass || clientState.activeLegacyClassTab;
 
-    // --- Render Navigation ---
     const classIconMap = {
         Barbarian: 'stadium', Cleric: 'ecg_heart', Mage: 'auto_awesome',
         Ranger: 'forest', Rogue: 'footprints', Warrior: 'swords'
     };
 
-    navContainer.innerHTML = Object.keys(staticClassData).map(className => `
-        <button class="legacy-nav-item ${className === classToShow ? 'active' : ''}" data-class-name="${className}">
-            <span class="material-symbols-outlined legacy-nav-icon">${classIconMap[className] || 'shield'}</span>
-            ${className}
-        </button>
-    `).join('');
+    navContainer.innerHTML = [
+        ...Object.keys(staticClassData).map(className => `
+            <button class="legacy-nav-item ${className === classToShow ? 'active' : ''}" data-class-name="${className}">
+                <span class="material-symbols-outlined legacy-nav-icon">${classIconMap[className] || 'shield'}</span>
+                ${className}
+            </button>
+        `),
+        `<button class="legacy-nav-item ${classToShow === '__achievements' ? 'active' : ''}" data-class-name="__achievements">
+            <span class="material-symbols-outlined legacy-nav-icon">emoji_events</span>
+            Achievements
+        </button>`,
+        `<button class="legacy-nav-item ${classToShow === '__perks' ? 'active' : ''}" data-class-name="__perks">
+            <span class="material-symbols-outlined legacy-nav-icon">stars</span>
+            Perks
+        </button>`
+    ].join('');
     
-    // --- Render Content Page ---
+    contentContainer.innerHTML = '';
+
+    if (classToShow === '__achievements') {
+        renderAchievementsTab(contentContainer);
+        return;
+    }
+    if (classToShow === '__perks') {
+        renderMetaPerksTab(contentContainer);
+        return;
+    }
+
     const classData = staticClassData[classToShow];
     if (!classData) {
         contentContainer.innerHTML = `<p>Select a class to view its legacy.</p>`;
         return;
     }
     
-    contentContainer.innerHTML = ''; // Clear previous content
     const header = document.createElement('div');
     header.className = 'legacy-class-page-header';
     header.innerHTML = `<h3 class="legacy-class-title">${classToShow}</h3>`;
@@ -3429,6 +3573,106 @@ function renderLegacyScreen(activeClass = clientState.activeLegacyClassTab) {
     });
     
     contentContainer.appendChild(upgradesGrid);
+}
+
+function renderAchievementsTab(container) {
+    const header = document.createElement('div');
+    header.className = 'legacy-class-page-header';
+    header.innerHTML = `<h3 class="legacy-class-title">Achievements</h3>
+        <p class="legacy-subtitle">Earn Essence by completing challenges</p>`;
+    container.appendChild(header);
+
+    const grid = document.createElement('div');
+    grid.className = 'achievements-grid';
+
+    for (const [id, def] of Object.entries(accountManager.achievementDefs)) {
+        const unlocked = !!accountManager.data.achievements[id];
+        const card = document.createElement('div');
+        card.className = `achievement-card ${unlocked ? 'unlocked' : 'locked'}`;
+        card.innerHTML = `
+            <span class="material-symbols-outlined achievement-icon">${def.icon}</span>
+            <div class="achievement-info">
+                <div class="achievement-name">${def.name}</div>
+                <div class="achievement-desc">${def.description}</div>
+                <div class="achievement-reward">${unlocked ? 'Completed' : `+${def.reward} Essence`}</div>
+            </div>
+        `;
+        grid.appendChild(card);
+    }
+
+    container.appendChild(grid);
+
+    const statsSection = document.createElement('div');
+    statsSection.className = 'account-stats-section';
+    const stats = accountManager.data.stats || {};
+    statsSection.innerHTML = `
+        <h4>Your Stats</h4>
+        <div class="stats-grid">
+            <div class="stat-item"><span class="stat-label">Games Played</span><span class="stat-value">${stats.gamesPlayed || 0}</span></div>
+            <div class="stat-item"><span class="stat-label">Monsters Defeated</span><span class="stat-value">${stats.monstersDefeated || 0}</span></div>
+            <div class="stat-item"><span class="stat-label">Bosses Defeated</span><span class="stat-value">${stats.bossesDefeated || 0}</span></div>
+            <div class="stat-item"><span class="stat-label">Dungeons Completed</span><span class="stat-value">${stats.dungeonsCompleted || 0}</span></div>
+            <div class="stat-item"><span class="stat-label">Highest Round</span><span class="stat-value">${stats.highestRound || 0}</span></div>
+            <div class="stat-item"><span class="stat-label">Synergies Triggered</span><span class="stat-value">${stats.synergiesTriggered || 0}</span></div>
+        </div>
+    `;
+    container.appendChild(statsSection);
+}
+
+function renderMetaPerksTab(container) {
+    const header = document.createElement('div');
+    header.className = 'legacy-class-page-header';
+    header.innerHTML = `<h3 class="legacy-class-title">Meta Perks</h3>
+        <p class="legacy-subtitle">Spend Essence on permanent bonuses (Essence: ${accountManager.data.essence || 0})</p>`;
+    container.appendChild(header);
+
+    const grid = document.createElement('div');
+    grid.className = 'meta-perks-grid';
+
+    const tiers = [1, 2, 3];
+    for (const tier of tiers) {
+        const tierSection = document.createElement('div');
+        tierSection.className = 'perk-tier-section';
+        tierSection.innerHTML = `<h4 class="perk-tier-title">Tier ${tier}</h4>`;
+        
+        const tierGrid = document.createElement('div');
+        tierGrid.className = 'perk-tier-grid';
+
+        for (const [id, def] of Object.entries(accountManager.metaPerkDefs)) {
+            if (def.tier !== tier) continue;
+            const owned = !!accountManager.data.metaPerks[id];
+            const canAfford = (accountManager.data.essence || 0) >= def.cost;
+            
+            const card = document.createElement('div');
+            card.className = `perk-card ${owned ? 'owned' : ''} ${!owned && canAfford ? 'affordable' : ''}`;
+            card.innerHTML = `
+                <span class="material-symbols-outlined perk-icon">${def.icon}</span>
+                <div class="perk-info">
+                    <div class="perk-name">${def.name}</div>
+                    <div class="perk-desc">${def.description}</div>
+                </div>
+                ${owned ? '<div class="perk-status">Unlocked</div>' :
+                  `<button class="btn btn-sm perk-buy-btn" data-perk-id="${id}" ${!canAfford ? 'disabled' : ''}>
+                      ${def.cost} Essence
+                  </button>`}
+            `;
+            tierGrid.appendChild(card);
+        }
+
+        tierSection.appendChild(tierGrid);
+        grid.appendChild(tierSection);
+    }
+
+    container.appendChild(grid);
+
+    container.querySelectorAll('.perk-buy-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const perkId = btn.dataset.perkId;
+            if (accountManager.purchaseMetaPerk(perkId)) {
+                renderLegacyScreen('__perks');
+            }
+        });
+    });
 }
 
 
@@ -4969,6 +5213,7 @@ const synergyManager = {
     },
     
     showSynergy(synergyData) {
+        accountManager.trackStat('synergiesTriggered');
         const container = get('synergy-container');
         if (!container) return;
         

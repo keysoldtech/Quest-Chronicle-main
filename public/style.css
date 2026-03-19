@@ -614,6 +614,202 @@ body {
     margin-top: auto;
 }
 
+/* --- ACHIEVEMENTS & META-PERKS --- */
+.legacy-subtitle {
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
+    margin-top: 0.25rem;
+}
+
+.achievements-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 0.75rem;
+    padding: 1rem;
+}
+
+.achievement-card {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    transition: border-color 0.2s;
+}
+.achievement-card.unlocked {
+    border-color: var(--color-special);
+    background: rgba(240,180,41,0.08);
+}
+.achievement-card.locked {
+    opacity: 0.6;
+}
+.achievement-icon {
+    font-size: 1.75rem;
+    color: var(--color-text-secondary);
+}
+.achievement-card.unlocked .achievement-icon {
+    color: var(--color-special);
+}
+.achievement-info {
+    flex: 1;
+}
+.achievement-name {
+    font-family: var(--font-title);
+    font-size: 1rem;
+    color: var(--color-text-primary);
+}
+.achievement-desc {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+}
+.achievement-reward {
+    font-size: 0.75rem;
+    color: var(--color-special);
+    font-weight: bold;
+}
+
+.account-stats-section {
+    padding: 1rem;
+    margin-top: 0.5rem;
+}
+.account-stats-section h4 {
+    font-family: var(--font-title);
+    color: var(--color-text-primary);
+    margin-bottom: 0.75rem;
+}
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.5rem;
+}
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.4rem 0.6rem;
+    background: rgba(0,0,0,0.2);
+    border-radius: 4px;
+}
+.stat-label {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+}
+.stat-value {
+    font-weight: bold;
+    color: var(--color-text-primary);
+}
+
+.meta-perks-grid {
+    padding: 1rem;
+}
+.perk-tier-section {
+    margin-bottom: 1.5rem;
+}
+.perk-tier-title {
+    font-family: var(--font-title);
+    color: var(--color-special);
+    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+}
+.perk-tier-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 0.75rem;
+}
+.perk-card {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    transition: all 0.2s;
+}
+.perk-card.owned {
+    border-color: var(--color-special);
+    background: rgba(240,180,41,0.08);
+}
+.perk-card.affordable {
+    border-color: var(--color-primary);
+}
+.perk-icon {
+    font-size: 1.5rem;
+    color: var(--color-text-secondary);
+}
+.perk-card.owned .perk-icon {
+    color: var(--color-special);
+}
+.perk-info {
+    flex: 1;
+}
+.perk-name {
+    font-family: var(--font-title);
+    font-size: 0.95rem;
+    color: var(--color-text-primary);
+}
+.perk-desc {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+}
+.perk-status {
+    font-size: 0.75rem;
+    color: var(--color-special);
+    font-weight: bold;
+}
+.perk-buy-btn {
+    white-space: nowrap;
+}
+
+/* Resume Bar (standalone offline) */
+.resume-bar {
+    background: rgba(240,180,41,0.12);
+    border: 1px solid var(--color-special);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: center;
+    text-align: center;
+}
+.resume-bar p {
+    color: var(--color-text-primary);
+    margin: 0;
+}
+.resume-buttons {
+    display: flex;
+    gap: 0.75rem;
+}
+
+/* Boss badge on monster cards */
+.boss-badge {
+    background: var(--color-danger);
+    color: white;
+    font-size: 0.65rem;
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+/* Status effect tags */
+.status-effects {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin-top: 0.25rem;
+}
+.status-tag {
+    font-size: 0.65rem;
+    background: rgba(154,43,43,0.3);
+    border: 1px solid var(--color-danger);
+    color: var(--color-text-primary);
+    padding: 0.1rem 0.3rem;
+    border-radius: 3px;
+}
+
 /* --- 3.5 PIXEL ART ANIMATION --- */
 .pixel-art-container {
     position: absolute;
