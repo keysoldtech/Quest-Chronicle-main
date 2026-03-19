@@ -292,6 +292,41 @@ function initializeClassSelection() {
     });
 }
 
+// --- RESUME SAVED GAME ---
+function resumeSavedGame(savedState) {
+    offlineEngine = new OfflineGameEngine();
+    offlineEngine.gameState = savedState;
+    offlineEngine.playerId = 'offline-player';
+    offlineEngine.isOfflineMode = true;
+    offlineEngine.monstersKilled = savedState.monstersKilled || 0;
+    offlineEngine.startAutoSave();
+    offlineEngine.initializeDevTools();
+    
+    currentRoomState = savedState;
+    
+    const player = savedState.players['offline-player'];
+    myPlayerName = player?.name || 'Hero';
+    clientState.selectedClass = player?.class || 'Warrior';
+    clientState.selectedGameMode = savedState.gameMode || 'Normal';
+    clientState.gameStarted = true;
+    
+    switchScreen('menu-screen', 'game-screen');
+    
+    if (!gameUIInitialized) {
+        initializeGameUI();
+        gameUIInitialized = true;
+    }
+    
+    renderGameState();
+    showToast(`Welcome back, ${myPlayerName}! Resuming from Turn ${savedState.turnCount || 0}.`, 'success');
+    
+    setInterval(() => {
+        if (currentRoomState && currentRoomState.phase === 'playing') {
+            gameSaveManager.save(currentRoomState);
+        }
+    }, 30000);
+}
+
 // --- START OFFLINE GAME ---
 function startOfflineGame() {
     offlineEngine = new OfflineGameEngine();
@@ -426,7 +461,8 @@ function attackMonster(monsterId) {
     if (!offlineEngine || !currentRoomState) return;
     
     const player = currentRoomState.players[myId];
-    offlineEngine.performAttack(player.equippedWeapon?.id, monsterId);
+    const weaponId = player.equipment?.weapon?.id || 'unarmed';
+    offlineEngine.performAttack(weaponId, monsterId);
     currentRoomState = offlineEngine.getGameState();
     renderGameState();
 }
@@ -479,12 +515,15 @@ function updatePlayerStats(player) {
     });
     
     // XP bar
-    const xpPct = (stats.xp % 100) / 100 * 100;
+    const playerLevel = stats.level || player.level || 1;
+    const xpToNext = playerLevel <= 1 ? 25 : Math.floor(25 * Math.pow(1.5, playerLevel - 1));
+    const currentXp = stats.xp || 0;
+    const xpPct = Math.min(100, (currentXp / xpToNext) * 100);
     queryAll('[data-container="player-xp-bar"]').forEach(bar => {
         bar.style.width = `${xpPct}%`;
     });
     queryAll('[data-container="player-xp-text"]').forEach(text => {
-        text.textContent = `Level ${stats.level} (${stats.xp % 100}/100)`;
+        text.textContent = `Level ${playerLevel} (${currentXp}/${xpToNext} XP)`;
     });
     
     // Show resource containers
@@ -501,14 +540,16 @@ function updateBoard() {
     container.innerHTML = monsters.map(monster => `
         <div class="card monster-card" data-monster-id="${monster.id}" onclick="attackMonster('${monster.id}')">
             <div class="card-header">
-                <h3>${monster.name}</h3>
+                <h3>${escapeHtml(monster.name)}</h3>
+                ${monster.isBoss ? '<span class="boss-badge">BOSS</span>' : ''}
             </div>
             <div class="card-body">
                 <div class="monster-stats">
                     <div class="stat-line">HP: ${monster.currentHp}/${monster.maxHp}</div>
-                    <div class="stat-line">AC: ${monster.ac}</div>
+                    <div class="stat-line">AC: ${monster.requiredRollToHit || monster.ac || 12}</div>
                     <div class="stat-line">DMG: ${monster.damage}</div>
                 </div>
+                ${monster.statusEffects?.length ? `<div class="status-effects">${monster.statusEffects.map(e => `<span class="status-tag">${escapeHtml(e.name)}</span>`).join('')}</div>` : ''}
             </div>
             <div class="card-footer">
                 <button class="btn btn-sm btn-danger">Attack</button>
@@ -520,36 +561,39 @@ function updateBoard() {
 function updateHand(player) {
     const containers = queryAll('[data-container="player-hand"]');
     containers.forEach(container => {
-        container.innerHTML = player.hand.map(card => `
+        container.innerHTML = player.hand.map(card => {
+            const apCost = card.apCost || 1;
+            const typeBadge = card.category || card.type || 'Item';
+            return `
             <div class="card item-card" data-card-id="${card.id}" onclick="useItem('${card.id}')">
                 <div class="card-header">
-                    <h3>${card.name}</h3>
-                    <span class="card-type">${card.type}</span>
+                    <h3>${escapeHtml(card.name)}</h3>
+                    <span class="card-type">${escapeHtml(typeBadge)}</span>
                 </div>
                 <div class="card-body">
-                    <p>${card.effect.description}</p>
+                    <p>${escapeHtml(card.effect?.description || '')}</p>
                 </div>
                 <div class="card-footer">
-                    <button class="btn btn-sm btn-primary">Use (1 AP)</button>
+                    <button class="btn btn-sm btn-primary">Use (${apCost} AP)</button>
                 </div>
-            </div>
-        `).join('');
+            </div>`;
+        }).join('');
     });
 }
 
 function updateEquipment(player) {
     const containers = queryAll('[data-container="equipped-items"]');
-    const equipment = [player.equippedWeapon, player.equippedArmor].filter(Boolean);
+    const equipped = [player.equipment?.weapon, player.equipment?.armor].filter(Boolean);
     
     containers.forEach(container => {
-        container.innerHTML = equipment.map(item => `
+        container.innerHTML = equipped.map(item => `
             <div class="card equipment-card">
                 <div class="card-header">
-                    <h3>${item.name}</h3>
-                    <span class="card-type">${item.type}</span>
+                    <h3>${escapeHtml(item.name)}</h3>
+                    <span class="card-type">${escapeHtml(item.type)}</span>
                 </div>
                 <div class="card-body">
-                    <p>${item.effect.description}</p>
+                    <p>${escapeHtml(item.effect?.description || '')}</p>
                 </div>
             </div>
         `).join('');
@@ -650,11 +694,39 @@ document.addEventListener('DOMContentLoaded', () => {
     accountManager.load();
     initMenuScreen();
     
-    // Check for saved game
+    // Check for saved game and offer to resume
     const savedGame = gameSaveManager.load();
-    if (savedGame) {
-        // TODO: Implement resume functionality
-        console.log('[Offline Game] Found saved game');
+    if (savedGame && savedGame.players && savedGame.phase === 'playing') {
+        const player = savedGame.players['offline-player'];
+        if (player) {
+            const resumeBar = document.createElement('div');
+            resumeBar.id = 'resume-bar';
+            resumeBar.className = 'resume-bar';
+            resumeBar.innerHTML = `
+                <p>Saved game found: <strong>${escapeHtml(player.name || 'Hero')}</strong> the ${escapeHtml(player.class || 'Adventurer')} (Turn ${savedGame.turnCount || 0})</p>
+                <div class="resume-buttons">
+                    <button id="resume-game-btn" class="btn btn-primary">Resume Game</button>
+                    <button id="discard-save-btn" class="btn btn-secondary">New Game</button>
+                </div>
+            `;
+            const menuScreen = get('menu-screen');
+            if (menuScreen) {
+                menuScreen.prepend(resumeBar);
+            }
+            
+            get('resume-game-btn').addEventListener('click', () => {
+                resumeBar.remove();
+                resumeSavedGame(savedGame);
+            });
+            
+            get('discard-save-btn').addEventListener('click', () => {
+                resumeBar.remove();
+                gameSaveManager.clear();
+                showToast('Saved game discarded.', 'info');
+            });
+            
+            console.log('[Offline Game] Found saved game, offering resume');
+        }
     }
     
     // Hide connection status
