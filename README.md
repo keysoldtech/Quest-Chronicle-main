@@ -1,7 +1,7 @@
 # 🎮 Quest & Chronicle - Multiplayer Tactical Card Game
 
-**Version:** v3.6.0  
-**Status:** Production Ready ✅  
+**Version:** v4.2.0  
+**Status:** Play-Testing Ready ✅  
 **Platform:** Web (PWA) - Works on all devices  
 **Modes:** Online Multiplayer + Offline Solo Play  
 

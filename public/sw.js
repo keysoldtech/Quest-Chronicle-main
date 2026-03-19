@@ -2,7 +2,7 @@
 // Handles offline caching with proper error handling
 
 // 1. CONFIGURATION
-const CACHE_NAME = 'quest-and-chronicle-v4.1.1-the-journey-of-lore';
+const CACHE_NAME = 'quest-and-chronicle-v4.2.0-revamp';
 const urlsToCache = [
   '/',
   '/index.html',
