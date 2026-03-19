@@ -2136,7 +2136,9 @@ function initializeGameUIListeners() {
                 clientState.soloPlayMode = false;
             }
             localStorage.removeItem('qc_currentGame');
-        } catch (_) {}
+        } catch (e) {
+            console.warn('[leaveGame] Cleanup error:', e.message);
+        }
         sessionStorage.removeItem('qc_roomId');
         sessionStorage.removeItem('qc_playerId');
         window.location.reload();
@@ -2955,7 +2957,9 @@ function showSkillChallengeModal(stage, challengeName) {
          if (desc && !desc.nextSibling?.classList?.contains('risk-roll-preview')) {
              desc.parentNode.insertBefore(prev, desc.nextSibling);
          }
-     } catch (e) {}
+     } catch (e) {
+         console.warn('[showSkillChallengeModal] Preview insertion failed:', e.message);
+     }
      modal.classList.remove('hidden');
 }
 
@@ -3655,7 +3659,9 @@ socket.on('gameStateUpdate', (newState) => {
                 }
             }
         }
-    } catch (e) {}
+    } catch (e) {
+        console.error('[gameStateUpdate] Shop UI update failed:', e);
+    }
 });
 
 // --- Choose Path Modal (Unified, required choice) ---
@@ -5553,7 +5559,9 @@ function initializeNewFeatures() {
                 if (window.telemetry?.track) window.telemetry.track('onboarding_dismissed', { dontShow: !!dontShowChk.checked });
             });
         }
-    } catch (_) {}
+    } catch (e) {
+        console.warn('[initializeNewFeatures] Onboarding overlay setup failed:', e.message);
+    }
 
     // Save and Leave buttons
     const saveAndLeaveBtn = get('save-and-leave-btn');
@@ -5768,7 +5776,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         const connStatus = document.getElementById('connection-status');
         if (connStatus) connStatus.style.display = 'none';
-    } catch (_) {}
+    } catch (e) {
+        console.warn('[DOMContentLoaded] Offline mode reset failed:', e.message);
+    }
     
     // Removed old menu guide button - now using purple book icon only
     
@@ -6001,7 +6011,9 @@ function saveGameToSlot(slotNumber) {
                 clientState.offlineMode = false;
                 clientState.soloPlayMode = false;
             }
-        } catch (_) {}
+        } catch (e) {
+            console.warn('[saveAndLeave] Cleanup error:', e.message);
+        }
         sessionStorage.removeItem('qc_roomId');
         sessionStorage.removeItem('qc_playerId');
         window.location.reload();
@@ -6696,38 +6708,45 @@ function createOfflineSoloGame() {
             try {
                 const me = currentRoomState.players[myId];
                 if (me && me.class) {
-                    // Equip weapon and armor
                     const weapon = drawFrom('weapon', me.class);
                     const armor = drawFrom('armor', me.class);
-                    if (weapon) (me.equipment.weapon = weapon);
-                    if (armor) (me.equipment.armor = armor);
-                    // Starting items/spells similar to defaults (2 each)
+                    if (weapon) me.equipment.weapon = weapon;
+                    if (armor) me.equipment.armor = armor;
                     for (let k=0;k<2;k++) { const it = drawFrom('item'); if (it) me.hand.push(it); }
                     for (let k=0;k<2;k++) { const sp = drawFrom('spell', me.class); if (sp) me.hand.push(sp); }
                 }
-            } catch (_) {}
-            // Create initial monster and randomize grid entities
+            } catch (e) {
+                console.error('[OfflineDecks] Failed to deal starting cards:', e);
+            }
             try {
-                // Place player at random bottom row position
                 const gx = Math.floor(Math.random()*5);
                 currentRoomState.gameState.grid.entities[myId] = { x: gx, y: 4, type: 'player' };
-                // Spawn 1-2 monsters at random top rows
-                const monsterNames = ['Goblin', 'Skeleton', 'Orc'];
+                const tier1Monsters = [
+                    { name: 'Goblin Archer', maxHp: 12, attackBonus: 4, requiredRollToHit: 13, damage: '1d6+2', xpValue: 10 },
+                    { name: 'Skeleton Guard', maxHp: 15, attackBonus: 2, requiredRollToHit: 13, damage: '1d6', xpValue: 8 },
+                    { name: 'Giant Spider', maxHp: 18, attackBonus: 3, requiredRollToHit: 12, damage: '1d8+1', xpValue: 12 },
+                ];
                 const mCount = 1 + Math.floor(Math.random()*2);
                 for (let m=0;m<mCount;m++) {
-                    const name = monsterNames[Math.floor(Math.random()*monsterNames.length)];
+                    const template = tier1Monsters[Math.floor(Math.random()*tier1Monsters.length)];
                     const id = `monster_${Date.now()}_${m}`;
-                    currentRoomState.gameState.board.monsters.push({ id, name, maxHp: 12+Math.floor(Math.random()*6), currentHp: 12+Math.floor(Math.random()*6), ac: 12+Math.floor(Math.random()*3) });
+                    currentRoomState.gameState.board.monsters.push({
+                        id, name: template.name, type: 'Monster',
+                        maxHp: template.maxHp, currentHp: template.maxHp,
+                        attackBonus: template.attackBonus, requiredRollToHit: template.requiredRollToHit,
+                        damage: template.damage, xpValue: template.xpValue, statusEffects: []
+                    });
                     currentRoomState.gameState.grid.entities[id] = { x: Math.floor(Math.random()*5), y: Math.floor(Math.random()*2), type: 'monster' };
                 }
-                // Immediately present Choose Your Path like online after setup
                 currentRoomState.gameState.nextRooms = [
                     { id: `room_${Date.now()}_0`, type: 'combat', preview: { danger: 'Medium', reward: 'Standard loot + XP' } },
                     { id: `room_${Date.now()}_1`, type: 'event', preview: { danger: 'Variable', reward: 'Random boon' } },
                     { id: `room_${Date.now()}_2`, type: 'shop', preview: { danger: 'Safe', reward: 'Buy/Reroll items' } }
                 ];
-                try { renderChoosePathModal(); } catch (_) {}
-            } catch (_) {}
+                try { renderChoosePathModal(); } catch (e) { console.warn('[OfflineDecks] Path modal render failed:', e.message); }
+            } catch (e) {
+                console.error('[OfflineDecks] Failed to set up initial board:', e);
+            }
             renderUI();
             return res;
         };
