@@ -6,7 +6,7 @@
   "display": "standalone",
   "background_color": "#12181b",
   "theme_color": "#4A1E3A",
-  "description": "Epic tactical RPG with synergies, specializations, and pixel art dungeon crawling!",
+  "description": "Tactical multiplayer card battles, solo offline play, and dungeon events — PWA.",
   "icons": [
     {
       "src": "/icons/logo.png",

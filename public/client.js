@@ -200,6 +200,15 @@ const escapeHtml = (unsafe) => {
     return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 };
 
+/** Verbose UI/trace logs (notifications, modal gating). Enable: `localStorage.setItem('qc_debug','1')` then refresh. */
+function qcDebug(...args) {
+    try {
+        if (typeof localStorage !== 'undefined' && localStorage.getItem('qc_debug') === '1') {
+            console.log('[QC]', ...args);
+        }
+    } catch (_) { /* ignore */ }
+}
+
 // --- NOTIFICATION MANAGER (Best-Practice Orchestrator) ---
 const NOTIFICATION_PRIORITY = { normal: 1, important: 2, critical: 3 };
 
@@ -283,11 +292,11 @@ const NotificationManager = {
     isBlockingModalOpen() {
         for (const el of document.querySelectorAll('.modal-overlay:not(.hidden)')) {
             if (NON_BLOCKING_UI_IDS.has(el.id)) continue;
-            console.log(`[ModalCheck] Blocking overlay: ${el.id || '(no id)'}`);
+            qcDebug('ModalCheck blocking overlay:', el.id || '(no id)');
             return true;
         }
         if (document.querySelector('.modal-backdrop:not(.hidden)')) {
-            console.log('[ModalCheck] Blocking: .modal-backdrop');
+            qcDebug('ModalCheck blocking: .modal-backdrop');
             return true;
         }
         return false;
@@ -296,14 +305,14 @@ const NotificationManager = {
     // CRITICAL FIX: Pause game when modals open to prevent overlapping prompts
     pauseGameForModal(modalType) {
         if (typeof socket !== 'undefined' && socket.connected) {
-            console.log(`[ModalPause] Pausing game for modal: ${modalType}`);
+            qcDebug('ModalPause:', modalType);
             socket.emit('pauseGameForModal', { modalType });
         }
     },
     
     resumeGameFromModal(modalType) {
         if (typeof socket !== 'undefined' && socket.connected) {
-            console.log(`[ModalResume] Resuming game from modal: ${modalType}`);
+            qcDebug('ModalResume:', modalType);
             socket.emit('resumeGameFromModal', { modalType });
         }
     },
@@ -322,7 +331,7 @@ const NotificationManager = {
         const existingExpiry = this.recentMap.get(key);
         if (existingExpiry && existingExpiry > now) {
             // Coalesce duplicates
-            console.log(`[NotificationManager] Duplicate notification blocked: ${message}`);
+            qcDebug('NotificationManager duplicate blocked:', message);
             return;
         }
         this.recentMap.set(key, now + this.dedupWindowMs);
@@ -341,20 +350,20 @@ const NotificationManager = {
                 }
             }
             if (idxToDrop >= 0 && priority >= minPriority) {
-                console.log(`[NotificationManager] Dropping low-priority notification: ${this.queue[idxToDrop].message}`);
+                qcDebug('NotificationManager drop low-priority:', this.queue[idxToDrop].message);
                 this.queue.splice(idxToDrop, 1);
             } else if (idxToDrop >= 0) {
-                console.log(`[NotificationManager] New notification dropped (lower priority): ${message}`);
+                qcDebug('NotificationManager new dropped (lower priority):', message);
                 return; // New item is lower, drop it
             }
         }
         this.queue.push({ message, type, duration, priority, createdAt: now, key });
         // Sort: higher priority first, FIFO within same priority
         this.queue.sort((a, b) => b.priority - a.priority || a.createdAt - b.createdAt);
-        console.log(`[NotificationManager] Queued notification: ${message} (priority: ${priority}, queue length: ${this.queue.length})`);
+        qcDebug('NotificationManager queued:', message, 'priority', priority, 'qlen', this.queue.length);
         // Preempt: critical can show even if gated
         if (priority === NOTIFICATION_PRIORITY.critical) {
-            console.log(`[NotificationManager] Critical notification bypassing queue: ${message}`);
+            qcDebug('NotificationManager critical bypass:', message);
             this.showNow({ message, type, duration });
             return;
         }
@@ -375,18 +384,18 @@ const NotificationManager = {
     },
     process() {
         if (this.processing) {
-            console.log(`[NotificationManager] Already processing, skipping`);
+            qcDebug('NotificationManager already processing, skip');
             return;
         }
         if (this.queue.length === 0) {
-            console.log(`[NotificationManager] Queue empty, nothing to process`);
+            qcDebug('NotificationManager queue empty');
             return;
         }
         
         // CRITICAL FIX: Check gating based on priority
         const next = this.queue[0]; // Peek at next item without removing
         if (this.isGatedForPriority(next.priority)) {
-            console.log(`[NotificationManager] Gated for priority ${next.priority}, retrying in 200ms`);
+            qcDebug('NotificationManager gated priority', next.priority, 'retry 200ms');
             // Try again soon after UI changes
             this.processing = true;
             setTimeout(() => { this.processing = false; this.process(); }, 200);
@@ -394,7 +403,7 @@ const NotificationManager = {
         }
         
         this.queue.shift(); // Now remove the item
-        console.log(`[NotificationManager] Processing notification: ${next.message} (priority: ${next.priority})`);
+        qcDebug('NotificationManager show:', next.message, 'p', next.priority);
         this.showNow(next);
     },
     showNow({ message, type, duration }) {

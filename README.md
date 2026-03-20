@@ -1,6 +1,6 @@
 # 🎮 Quest & Chronicle - Multiplayer Tactical Card Game
 
-**Version:** v4.2.1  
+**Version:** v4.2.2  
 **Status:** Play-Testing Ready ✅  
 **Platform:** Web (PWA) - Works on all devices  
 **Modes:** Online Multiplayer + Offline Solo Play  
@@ -422,9 +422,9 @@ node server.js
 
 ### Testing:
 ```bash
-# Clear browser cache before testing
-# Open dev console (F12) to see logs
-# Test offline by using airplane mode
+npm test
+# Clear browser cache before manual QA; open dev console (F12)
+# Verbose UI trace (optional): localStorage.setItem('qc_debug','1') then refresh
 ```
 
 ### Deploying to Render.com:
@@ -536,7 +536,8 @@ This project is for personal/educational use.
 
 ## 🎯 Version History
 
-- **v4.2.1** (Current) - Playtest stability: dice UI, grid fallbacks, NPC event choices match buttons, UI gate timeouts
+- **v4.2.2** (Current) - Polish: quieter default console (opt-in `qc_debug`), PWA title/description, dependency audit
+- **v4.2.1** - Playtest stability: dice UI, grid fallbacks, NPC event choices match buttons, UI gate timeouts
 - **v4.2.0** - Package / README alignment
 - **v3.6.0** - AOE spells + Status effect impact
 - **v3.5.6** - Offline solo play complete
@@ -601,8 +602,8 @@ This project is for personal/educational use.
 
 ---
 
-**Current Version:** v4.2.1  
-**Last Updated:** 2026-03-19  
+**Current Version:** v4.2.2  
+**Last Updated:** 2026-03-20  
 **Status:** Play-test ready ✅  
 
 **Enjoy the game!** 🎮✨
