@@ -1741,8 +1741,6 @@ class GameManager {
         
         // World events tick per full round (handled in turn-cycle logic)
 
-        io.to(room.id).emit('turnStarted', { playerId: player.id });
-        
         // Random dungeon event chance (15% per turn for players)
         if (!player.isNpc && Math.random() < 0.15) {
             this._triggerDungeonEvent(room, player);
@@ -1758,7 +1756,9 @@ class GameManager {
             this._spawnEnvironmentalCard(room);
         }
         
+        // Emit full state first so clients never show "your turn" while the board is still on the previous snapshot.
         this.emitGameState(room.id);
+        io.to(room.id).emit('turnStarted', { playerId: player.id });
         
         if (player.isNpc) {
             // Delay NPC turns to ensure player sees the turn change

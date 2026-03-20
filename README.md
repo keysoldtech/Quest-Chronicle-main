@@ -1,6 +1,6 @@
 # 🎮 Quest & Chronicle - Multiplayer Tactical Card Game
 
-**Version:** v4.2.3  
+**Version:** v4.2.4  
 **Status:** Play-Testing Ready ✅  
 **Platform:** Web (PWA) - Works on all devices  
 **Modes:** Online Multiplayer + Offline Solo Play  
@@ -536,7 +536,8 @@ This project is for personal/educational use.
 
 ## 🎯 Version History
 
-- **v4.2.3** (Current) - Console: voice/socket/grid/load-game logs behind `qc_debug`; in-game menu About line; `application-name` meta
+- **v4.2.4** (Current) - Multiplayer sync: emit state before `turnStarted`; action bar + `turnPopupReady` from game state; log toasts after paint; respect `isPaused` for actions
+- **v4.2.3** - Console: voice/socket/grid/load-game logs behind `qc_debug`; in-game menu About line; `application-name` meta
 - **v4.2.2** - Polish: quieter default console (opt-in `qc_debug`), PWA title/description, dependency audit
 - **v4.2.1** - Playtest stability: dice UI, grid fallbacks, NPC event choices match buttons, UI gate timeouts
 - **v4.2.0** - Package / README alignment
@@ -603,7 +604,7 @@ This project is for personal/educational use.
 
 ---
 
-**Current Version:** v4.2.3  
+**Current Version:** v4.2.4  
 **Last Updated:** 2026-03-20  
 **Status:** Play-test ready ✅  
 

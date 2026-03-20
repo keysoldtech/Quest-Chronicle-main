@@ -1,5 +1,5 @@
 /** Client build label — bump with package.json / README. */
-const QC_VERSION = '4.2.3';
+const QC_VERSION = '4.2.4';
 
 /**
  * Verbose client logs (voice, socket, grid, load game, etc.).
@@ -158,7 +158,7 @@ const clientState = {
     hasSeenSkillChallengePrompt: false, // Prevents re-opening the modal
     lastLogLength: 0, // For tracking new log entries for toasts
     activeLegacyClassTab: 'Barbarian', // Default tab for the legacy screen
-    turnPopupReady: false, // CRITICAL FIX: Prevents actions until turn popup is displayed
+    turnPopupReady: false, // Mirrored from game state in renderGameplayState (your turn + not paused)
     selectedLevelUpStat: null,
     hasShownEndTurnPrompt: false,
     toastQueue: [],
@@ -1013,17 +1013,21 @@ function renderUI() {
     const { players, gameState, chatLog, hostId } = currentRoomState;
     const { phase, isPaused, pauseReason } = gameState;
     
-    // --- Toasts for new actions ---
-    const newLogEntries = chatLog.slice(clientState.lastLogLength);
-    newLogEntries.forEach(entry => {
-        const isMyAction = entry.playerId === myId || entry.rollerId === myId;
-        // Remove duplicate attack info toasts: suppress generic action/combat toasts
-        const isToastable = !['chat', 'narrative', 'system', 'combat', 'combat-hit', 'action', 'action-good'].includes(entry.type);
-        if (isToastable && !isMyAction) {
-            showToast(entry.text, 'info');
-        }
-    });
+    // --- Toasts for new actions (after paint so board/grid match the toast) ---
+    const logSliceStart = clientState.lastLogLength;
     clientState.lastLogLength = chatLog.length;
+    const newLogEntries = chatLog.slice(logSliceStart);
+    if (newLogEntries.length > 0) {
+        requestAnimationFrame(() => {
+            newLogEntries.forEach(entry => {
+                const isMyAction = entry.playerId === myId || entry.rollerId === myId;
+                const isToastable = !['chat', 'narrative', 'system', 'combat', 'combat-hit', 'action', 'action-good'].includes(entry.type);
+                if (isToastable && !isMyAction) {
+                    showToast(entry.text, 'info');
+                }
+            });
+        });
+    }
 
     // Game Paused Overlay - Context-Aware Logic
     const pauseModal = get('game-paused-modal');
@@ -1260,6 +1264,9 @@ function renderClassSelection(desktopContainer, mobileContainer) {
  */
 function renderGameplayState(myPlayer, gameState) {
     const isMyTurn = gameState.turnOrder[gameState.currentPlayerIndex] === myPlayer.id && !myPlayer.isDowned;
+    const canAct = isMyTurn && !gameState.isPaused;
+    // Authoritative: derived from state (not socket timing) — fixes hidden action bar + turn banner desync.
+    clientState.turnPopupReady = canAct;
 
     renderPartyHope(gameState.partyHope);
 
@@ -1274,7 +1281,7 @@ function renderGameplayState(myPlayer, gameState) {
         queryAll('[data-container="player-ap-text"]').forEach(el => el.textContent = `${myPlayer.currentAp} / ${myPlayer.stats.maxAP}`);
         
         // FEATURE: Prompt to end turn when out of AP
-        if (myPlayer.currentAp === 0 && !clientState.hasShownEndTurnPrompt && isMyTurn) {
+        if (myPlayer.currentAp === 0 && !clientState.hasShownEndTurnPrompt && canAct) {
             clientState.hasShownEndTurnPrompt = true;
             // Gate end-turn prompt behind roll modal/toast activity
             setTimeout(() => showEndTurnPrompt(), 300);
@@ -1309,8 +1316,7 @@ function renderGameplayState(myPlayer, gameState) {
     const turnText = turnPlayer ? `${turnPlayer.name}'s Turn` : "Loading...";
     queryAll('[data-container="turn-indicator"]').forEach(el => el.textContent = turnText);
     
-    // CRITICAL FIX: Only show action bar after turn popup is ready to prevent timing issues
-    const shouldShowActionBar = isMyTurn && clientState.turnPopupReady;
+    const shouldShowActionBar = canAct;
     queryAll('[data-container="action-bar"]').forEach(el => el.classList.toggle('hidden', !shouldShowActionBar));
     queryAll('[data-container="action-skill-challenge-btn"]').forEach(el => el.classList.toggle('hidden', !gameState.skillChallenge.isActive));
     // Ensure companion-related action buttons exist and are correctly visible
@@ -1319,8 +1325,8 @@ function renderGameplayState(myPlayer, gameState) {
     const boardContainers = queryAll('[data-container="board-cards"]');
     boardContainers.forEach(c => c.innerHTML = '');
     [...gameState.board.monsters, ...gameState.board.environment].forEach(card => {
-        const isInteractable = isMyTurn && (card.type === 'Monster' || card.type === 'Environmental');
-        const cardEl = createCardElement(card, { isTargetable: isMyTurn, isInteractable });
+        const isInteractable = canAct && (card.type === 'Monster' || card.type === 'Environmental');
+        const cardEl = createCardElement(card, { isTargetable: canAct, isInteractable });
         // CRITICAL FIX: Only append to the first container to prevent duplicate buttons
         if (boardContainers.length > 0) {
             boardContainers[0].appendChild(cardEl);
@@ -1351,7 +1357,7 @@ function renderGameplayState(myPlayer, gameState) {
         worldEventBanners.forEach(banner => banner.classList.add('hidden'));
     }
 
-    renderCharacterPanel(get('character-sheet-block'), get('mobile-screen-character'), myPlayer, isMyTurn);
+    renderCharacterPanel(get('character-sheet-block'), get('mobile-screen-character'), myPlayer, canAct);
 
     const lootContainers = queryAll('[data-container="party-loot"]');
     lootContainers.forEach(c => c.innerHTML = '');
@@ -1364,7 +1370,7 @@ function renderGameplayState(myPlayer, gameState) {
          lootContainers.forEach(container => container.innerHTML = `<p class="empty-pool-text">No discoveries yet.</p>`);
     }
 
-    renderHandAndEquipment(myPlayer, isMyTurn);
+    renderHandAndEquipment(myPlayer, canAct);
 }
 
 function renderPartyHope(hope) {
@@ -2596,7 +2602,7 @@ function showChatPreview(sender, message) {
     }, 5000);
 }
 
-/** Show YOUR TURN banner and enable actions (no gating — caller handles runWhenUngated). */
+/** Show YOUR TURN banner (visual only; turnPopupReady is driven by game state in renderGameplayState). */
 function revealYourTurnBanner() {
     const popup = get('your-turn-popup');
     if (!popup) return;
@@ -2605,11 +2611,6 @@ function revealYourTurnBanner() {
     popup.setAttribute('aria-atomic', 'true');
     popup.style.zIndex = '10001';
     popup.classList.remove('hidden');
-
-    setTimeout(() => {
-        clientState.turnPopupReady = true;
-        qcDebug('[TurnPopup] Turn popup ready - actions now allowed');
-    }, 500);
 
     setTimeout(() => popup.classList.add('hidden'), 2500);
 }
@@ -4177,15 +4178,10 @@ socket.on('playerIdentity', ({ playerId, roomId }) => {
 });
 
 socket.on('turnStarted', ({ playerId }) => {
-    // CRITICAL FIX: Reset turn popup ready flag for any turn change
-    clientState.turnPopupReady = false;
-    qcDebug('[TurnStarted] Turn popup ready flag reset - actions blocked until popup displays');
-    
+    // turnPopupReady is set from game state in renderGameplayState (server emits state before turnStarted).
     if (playerId !== myId) {
-        // Not my turn - keep actions blocked
         return;
     }
-    
     runWhenUngated(
         () => {
             revealYourTurnBanner();
