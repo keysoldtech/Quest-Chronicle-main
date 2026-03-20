@@ -1,5 +1,5 @@
 /** Client build label — bump with package.json / README. */
-const QC_VERSION = '4.2.7';
+const QC_VERSION = '4.2.8';
 
 /**
  * Verbose client logs (voice, socket, grid, load game, etc.).
@@ -6126,6 +6126,37 @@ function switchMobileScreen(screenName) {
     });
 }
 
+/** Desktop only: Full / Table / Party & log — choice stored in localStorage (see branch `cursor/ui-desktop-layout-tabs`). */
+function initDesktopLayoutSwitcher() {
+    const root = document.querySelector('.game-area-desktop');
+    const switcher = root && root.querySelector('[data-container="desktop-layout-switcher"]');
+    if (!root || !switcher) return;
+    const storageKey = 'qc_desktop_layout';
+    const applyMode = (mode) => {
+        const m = mode === 'battle' || mode === 'party' ? mode : 'full';
+        root.setAttribute('data-desktop-layout', m);
+        switcher.querySelectorAll('.desktop-layout-btn').forEach((btn) => {
+            const is = btn.dataset.desktopLayout === m;
+            btn.classList.toggle('active', is);
+            btn.setAttribute('aria-pressed', is ? 'true' : 'false');
+        });
+    };
+    try {
+        const saved = localStorage.getItem(storageKey);
+        if (saved === 'full' || saved === 'battle' || saved === 'party') {
+            applyMode(saved);
+        }
+    } catch (_) { /* ignore */ }
+    switcher.addEventListener('click', (e) => {
+        const btn = e.target.closest('.desktop-layout-btn');
+        if (!btn) return;
+        const mode = btn.dataset.desktopLayout;
+        if (!mode) return;
+        applyMode(mode);
+        try { localStorage.setItem(storageKey, mode); } catch (_) { /* ignore */ }
+    });
+}
+
 // Initialize mobile navigation
 function initializeMobileNavigation() {
     const navButtons = document.querySelectorAll('.mobile-bottom-nav .nav-btn');
@@ -6192,6 +6223,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load sprite manifest early for DPR-aware sprites
     loadSpriteManifest();
     initializeNewFeatures();
+    initDesktopLayoutSwitcher();
     initializeMobileNavigation();
     initializeSaveLoadSystem();
     initializeMobileCombatGrid();

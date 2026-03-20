@@ -1,6 +1,6 @@
 # 🎮 Quest & Chronicle - Multiplayer Tactical Card Game
 
-**Version:** v4.2.7  
+**Version:** v4.2.8 *(experimental desktop layout tabs — branch `cursor/ui-desktop-layout-tabs`)*  
 **Status:** Play-Testing Ready ✅  
 **Platform:** Web (PWA) - Works on all devices  
 **Modes:** Online Multiplayer + Offline Solo Play  
@@ -536,7 +536,8 @@ This project is for personal/educational use.
 
 ## 🎯 Version History
 
-- **v4.2.7** (Current) - Desktop layout: `#game-screen` viewport lock (no double scroll); flex chain `min-height: 0`; board/hand flex; action bar moved into center column + `position: sticky` (aligns with grid)
+- **v4.2.8** (Experimental branch) - Desktop **View** toolbar: Full (default) / **Table** (board + hand only) / **Party & log** (party + journal, board hidden); preference `localStorage` key `qc_desktop_layout`
+- **v4.2.7** - Desktop layout: `#game-screen` viewport lock (no double scroll); flex chain `min-height: 0`; board/hand flex; action bar moved into center column + `position: sticky` (aligns with grid)
 - **v4.2.6** - Turn flow: no `moveToNextTurn` while paused; path event timer respects pause; after level-up/specialization restore `currentPlayerIndex` + emit `turnStarted`
 - **v4.2.5** - Skill check: `skillCheckResolved` includes `rollerId`; `buyItem` while shop open bypasses turn gate; pending NPC `resolveEvent` before turn gate; multi-stage chest + path chooser fixes
 - **v4.2.4** - Multiplayer sync: emit state before `turnStarted`; action bar + `turnPopupReady` from game state; log toasts after paint; respect `isPaused` for actions
@@ -607,7 +608,7 @@ This project is for personal/educational use.
 
 ---
 
-**Current Version:** v4.2.7  
+**Current Version:** v4.2.8 (experimental UI branch)  
 **Last Updated:** 2026-03-20  
 **Status:** Play-test ready ✅  
 

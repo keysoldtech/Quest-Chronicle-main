@@ -77,7 +77,7 @@
         <div class="menu-container">
             <h1 class="game-title">Quest & Chronicle</h1>
             <p class="game-subtitle">The Journey of Lore</p>
-            <div class="version-display">v4.2.7 · The Journey of Lore</div>
+            <div class="version-display">v4.2.8 · The Journey of Lore</div>
             
             <div class="menu-section">
                 <label for="player-name-input" class="input-label">Enter Your Name</label>
@@ -225,7 +225,7 @@
         <div id="game-area" class="game-area">
             
             <!-- ================= DESKTOP LAYOUT ================= -->
-            <div class="game-area-desktop">
+            <div class="game-area-desktop" data-desktop-layout="full">
                 <header class="game-header">
                     <div class="header-info">
                          <p class="turn-indicator-font" data-container="turn-indicator">Waiting for game to start...</p>
@@ -274,7 +274,7 @@
                          <p class="turn-counter">Round: <span data-container="turn-counter">0</span></p>
                     </div>
                      <div class="header-controls">
-                        <p class="build-number-font">v4.2.7 · The Journey of Lore</p>
+                        <p class="build-number-font">v4.2.8 · The Journey of Lore</p>
                         <div id="dm-controls" class="dm-controls hidden">
                              <button id="dm-play-monster-btn" class="btn btn-sm btn-secondary">Play Monster</button>
                         </div>
@@ -298,6 +298,15 @@
                         </div>
                     </div>
                 </header>
+
+                <nav class="desktop-layout-switcher" role="toolbar" aria-label="Desktop layout" data-container="desktop-layout-switcher">
+                    <span class="desktop-layout-switcher-label">View</span>
+                    <div class="desktop-layout-switcher-buttons">
+                        <button type="button" class="btn btn-sm btn-secondary desktop-layout-btn active" data-desktop-layout="full" aria-pressed="true" title="Board, party, and log side by side">Full</button>
+                        <button type="button" class="btn btn-sm btn-secondary desktop-layout-btn" data-desktop-layout="battle" aria-pressed="false" title="Wider board and hand — party and log hidden">Table</button>
+                        <button type="button" class="btn btn-sm btn-secondary desktop-layout-btn" data-desktop-layout="party" aria-pressed="false" title="Party list and journal — board hidden">Party &amp; log</button>
+                    </div>
+                </nav>
     
                 <aside id="players-list-container" class="players-panel panel">
                     <div id="player-list-display">

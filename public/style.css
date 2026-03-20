@@ -1073,8 +1073,11 @@ body {
 .game-area-desktop { 
     display: grid; 
     grid-template-columns: minmax(200px, 275px) minmax(0, 1fr) minmax(260px, 350px); 
-    grid-template-rows: auto minmax(0, 1fr); 
-    grid-template-areas: "header header header" "players main info"; 
+    grid-template-rows: auto auto minmax(0, 1fr); 
+    grid-template-areas:
+        "header header header"
+        "layout layout layout"
+        "players main info"; 
     gap: 0.75rem; 
     width: 100%; 
     flex: 1 1 auto;
@@ -1084,6 +1087,61 @@ body {
 }
 .game-area-desktop > * {
     min-width: 0;
+}
+.desktop-layout-switcher {
+    grid-area: layout;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem 1rem;
+    padding: 0.4rem 0.65rem;
+    border-radius: 6px;
+    border: 1px solid var(--color-border);
+    background: rgba(0, 0, 0, 0.22);
+    box-sizing: border-box;
+}
+.desktop-layout-switcher-label {
+    font-family: var(--font-title);
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+    user-select: none;
+}
+.desktop-layout-switcher-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    justify-content: center;
+}
+.desktop-layout-btn.active {
+    border-color: var(--color-special);
+    color: var(--color-special);
+    background-color: var(--color-surface);
+}
+/* Experimental: reduce clutter — one primary column at a time */
+.game-area-desktop[data-desktop-layout="battle"] {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    grid-template-areas:
+        "header"
+        "layout"
+        "main";
+}
+.game-area-desktop[data-desktop-layout="battle"] .players-panel,
+.game-area-desktop[data-desktop-layout="battle"] .info-tabs-panel {
+    display: none !important;
+}
+.game-area-desktop[data-desktop-layout="party"] {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr);
+    grid-template-areas:
+        "header header"
+        "layout layout"
+        "players info";
+}
+.game-area-desktop[data-desktop-layout="party"] #main-game-area-wrapper,
+.game-area-desktop[data-desktop-layout="party"] .desktop-action-bar {
+    display: none !important;
 }
 .game-header { grid-area: header; } 
 .players-panel { 
