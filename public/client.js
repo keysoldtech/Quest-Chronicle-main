@@ -1,5 +1,5 @@
 /** Client build label — bump with package.json / README. */
-const QC_VERSION = '4.2.7';
+const QC_VERSION = '4.3.0';
 
 /**
  * Verbose client logs (voice, socket, grid, load game, etc.).
@@ -102,11 +102,12 @@ function renderShopInventory(inventory, shopId, stateOverride = null) {
 // Socket.IO - gracefully handle offline mode
 let socket;
 try {
-    socket = io({ 
-        timeout: 5000,
+    socket = io({
+        timeout: 20000,
         reconnection: true,
         reconnectionDelay: 1000,
-        reconnectionAttempts: 3
+        reconnectionDelayMax: 10000,
+        reconnectionAttempts: 10
     });
 } catch (e) {
     qcDebug('[Socket] Failed to initialize, running in offline mode');
@@ -2407,20 +2408,27 @@ function initializeGameUIListeners() {
     ['leave-voice-btn', 'mobile-leave-voice-btn'].forEach(id => get(id).addEventListener('click', () => voiceChatManager.leave()));
     ['mute-voice-btn', 'mobile-mute-voice-btn'].forEach(id => get(id).addEventListener('click', () => voiceChatManager.toggleMute()));
 
-    document.querySelector('.info-tabs-panel .tab-buttons').addEventListener('click', (e) => {
-        if (e.target.classList.contains('tab-btn')) {
-            const tabId = e.target.dataset.tab;
-            document.querySelectorAll('.info-tabs-panel .tab-btn').forEach(b => b.classList.remove('active'));
-            e.target.classList.add('active');
-            document.querySelectorAll('.info-tabs-panel .tab-content').forEach(c => c.classList.remove('active'));
-            get(tabId).classList.add('active');
-        }
-    });
+    const infoTabButtons = document.querySelector('.info-tabs-panel .tab-buttons');
+    if (infoTabButtons) {
+        infoTabButtons.addEventListener('click', (e) => {
+            if (e.target.classList.contains('tab-btn')) {
+                const tabId = e.target.dataset.tab;
+                document.querySelectorAll('.info-tabs-panel .tab-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                document.querySelectorAll('.info-tabs-panel .tab-content').forEach(c => c.classList.remove('active'));
+                const tabEl = get(tabId);
+                if (tabEl) tabEl.classList.add('active');
+            }
+        });
+    }
 
-    document.querySelector('.mobile-bottom-nav').addEventListener('click', (e) => {
-        const navBtn = e.target.closest('.nav-btn');
-        if (navBtn) switchMobileScreen(navBtn.dataset.screen);
-    });
+    const mobileNav = document.querySelector('.mobile-bottom-nav');
+    if (mobileNav) {
+        mobileNav.addEventListener('click', (e) => {
+            const navBtn = e.target.closest('.nav-btn');
+            if (navBtn && navBtn.dataset.screen) switchMobileScreen(navBtn.dataset.screen);
+        });
+    }
     
     get('dice-roll-confirm-btn').addEventListener('click', handleDiceRoll);
     get('dice-roll-close-btn').addEventListener('click', () => dismissDiceRollModal());
@@ -2563,13 +2571,6 @@ function initializeGameUIListeners() {
 }
 
 // --- 4. MODAL & POPUP LOGIC ---
-function switchMobileScreen(screenName) {
-    document.querySelectorAll('.mobile-screen').forEach(s => s.classList.remove('active'));
-    get(`mobile-screen-${screenName}`).classList.add('active');
-    document.querySelectorAll('.mobile-bottom-nav .nav-btn').forEach(b => b.classList.remove('active'));
-    document.querySelector(`.mobile-bottom-nav .nav-btn[data-screen="${screenName}"]`).classList.add('active');
-}
-
 function isUiBusyWithRolls() {
     const diceModal = get('dice-roll-modal');
     const diceOpen = diceModal && !diceModal.classList.contains('hidden');
@@ -3891,20 +3892,6 @@ function handleDiceRoll() {
 }
 
 // --- 6. SOCKET.IO EVENT HANDLERS ---
-socket.on('connect', () => {
-    myId = socket.id;
-    qcDebug('Connected to server with ID:', socket.id);
-    // If we have a saved identity, attempt seamless rejoin
-    const roomId = sessionStorage.getItem('qc_roomId');
-    const playerId = sessionStorage.getItem('qc_playerId');
-    if (roomId && playerId) {
-        try {
-            socket.emit('rejoinRoom', { roomId, playerId });
-            showToast('Reconnected! Restoring session...', 'success', 1500);
-        } catch (_) {}
-    }
-});
-
 // Register shop socket handlers now that socket exists
 socket.on('shopOpened', ({ inventory, shopId, isMultiplayer, totalPlayers, playerId }) => {
     const modal = get('shop-modal');
@@ -4616,22 +4603,30 @@ document.addEventListener('visibilitychange', () => {
 });
 
 socket.on('connect', () => {
+    myId = socket.id;
     isSocketConnected = true;
     updateConnectionStatus();
-    qcDebug('[Socket] Connected to server');
-    qcDebug('[Socket] Connection status updated:', isSocketConnected);
-    
-    // Prefer exact rejoin using stored identity
+    qcDebug('[Socket] Connected to server with ID:', socket.id);
+
+    // Drop "offline bridge" after a successful reconnect to multiplayer (not solo offline)
+    if (offlineMode.isEnabled() && !clientState.soloPlayMode && currentRoomState?.gameState?.phase === 'started') {
+        offlineMode.disable();
+        qcDebug('[Socket] Cleared offline bridge after reconnect');
+    }
+
     const roomId = sessionStorage.getItem('qc_roomId');
     const playerId = sessionStorage.getItem('qc_playerId');
     if (roomId && playerId) {
-        socket.emit('rejoinRoom', { roomId, playerId });
+        try {
+            socket.emit('rejoinRoom', { roomId, playerId });
+        } catch (_) {}
         showToast('Reconnected! Restoring session...', 'success', 1500);
         return;
     }
-    // Fallback: name-based join if we still have state
     if (currentRoomState && currentRoomState.id && myPlayerName) {
-        socket.emit('joinRoom', { roomId: currentRoomState.id, playerName: myPlayerName });
+        try {
+            socket.emit('joinRoom', { roomId: currentRoomState.id, playerName: myPlayerName });
+        } catch (_) {}
         showToast('Reconnected! Rejoining game...', 'success', 1500);
     }
 });
@@ -6104,44 +6099,45 @@ function updateMobileCharacterViewer() {
     }
 }
 
-// Helper function to switch mobile screens
 function switchMobileScreen(screenName) {
-    // Hide all screens
-    document.querySelectorAll('.mobile-screen').forEach(screen => {
+    document.querySelectorAll('.mobile-screen').forEach((screen) => {
         screen.classList.remove('active');
     });
-    
-    // Show target screen
     const targetScreen = get(`mobile-screen-${screenName}`);
     if (targetScreen) {
         targetScreen.classList.add('active');
     }
-    
-    // Update nav buttons
-    document.querySelectorAll('.mobile-bottom-nav .nav-btn').forEach(btn => {
+    document.querySelectorAll('.mobile-bottom-nav .nav-btn').forEach((btn) => {
         btn.classList.remove('active');
         if (btn.dataset.screen === screenName) {
             btn.classList.add('active');
         }
     });
+    document.querySelectorAll('.mobile-tab-strip .mobile-tab').forEach((btn) => {
+        btn.classList.remove('active');
+        if (btn.dataset.screen === screenName) {
+            btn.classList.add('active');
+        }
+        const selected = btn.dataset.screen === screenName;
+        if (btn.getAttribute('role') === 'tab') {
+            btn.setAttribute('aria-selected', selected ? 'true' : 'false');
+        }
+    });
+    if (screenName === 'character') {
+        updateMobileCharacterViewer();
+    }
 }
 
-// Initialize mobile navigation
 function initializeMobileNavigation() {
-    const navButtons = document.querySelectorAll('.mobile-bottom-nav .nav-btn');
-    navButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const screen = btn.dataset.screen;
-            if (screen) {
-                switchMobileScreen(screen);
-                
-                // Update character viewer when switching to character screen
-                if (screen === 'character') {
-                    updateMobileCharacterViewer();
-                }
+    const strip = document.querySelector('.mobile-tab-strip');
+    if (strip) {
+        strip.addEventListener('click', (e) => {
+            const tab = e.target.closest('.mobile-tab');
+            if (tab && tab.dataset.screen) {
+                switchMobileScreen(tab.dataset.screen);
             }
         });
-    });
+    }
 }
 
 // --- MOBILE ACTION DROPDOWN HANDLER ---
