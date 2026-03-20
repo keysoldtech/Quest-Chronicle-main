@@ -2,7 +2,7 @@
 // Handles offline caching with proper error handling
 
 // 1. CONFIGURATION
-const CACHE_NAME = 'quest-and-chronicle-v4.4.0-pwa';
+const CACHE_NAME = 'quest-and-chronicle-v4.4.1-pwa';
 const urlsToCache = [
   '/',
   '/index.html',

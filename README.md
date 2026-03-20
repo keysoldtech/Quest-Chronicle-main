@@ -1,6 +1,6 @@
 # 🎮 Quest & Chronicle - Multiplayer Tactical Card Game
 
-**Version:** v4.4.0 *(experimental — desktop + mobile layout tabs; branch `cursor/ui-desktop-layout-tabs`)*  
+**Version:** v4.4.1 *(experimental — desktop + mobile layout tabs; branch `cursor/ui-desktop-layout-tabs`; includes playtest v4.3.1 layout fix)*  
 **Status:** Play-Testing Ready ✅  
 **Platform:** Web (PWA) - Works on all devices  
 **Modes:** Online Multiplayer + Offline Solo Play  
@@ -536,7 +536,9 @@ This project is for personal/educational use.
 
 ## 🎯 Version History
 
-- **v4.4.0** (Experimental branch) - Includes **v4.3.0** playtest fixes; desktop **View** toolbar (Full / Table / Party & log); mobile **tab strip** (Play / Hero / Party / Journal) with Journal = world events + discoveries + chat; bottom icon bar hidden on this branch; prefs `qc_desktop_layout` + `qc_mobile_tab` (last screen)
+- **v4.4.1** (Experimental branch) - Same as **v4.4.0** plus merged **v4.3.1** playtest layout revert (board/hand cards visible again): pre-fit desktop column scroll + **fixed** action bar outside main wrapper.
+- **v4.4.0** - Experimental: desktop **View** toolbar; mobile **tab strip** + Journal; prefs `qc_desktop_layout`, `qc_mobile_tab`
+- **v4.3.1** (Playtest) - **Revert** desktop viewport-fit / sticky action-bar layout — restores visible board/hand cards; fixed action bar + scrollable game column. Keeps v4.3.0 reconnect/PWA/mobile safe-area fixes.
 - **v4.3.0** - Multiplayer: single `connect` handler (no duplicate `rejoinRoom`); longer reconnect backoff; clear offline bridge on reconnect; guarded desktop log tabs listener. PWA: manifest icons/scope/id, theme & install meta, SW cache bump. Mobile: safe-area insets, tighter panels, toast position.
 - **v4.2.7** - Desktop layout: `#game-screen` viewport lock (no double scroll); flex chain `min-height: 0`; board/hand flex; action bar moved into center column + `position: sticky` (aligns with grid)
 - **v4.2.6** - Turn flow: no `moveToNextTurn` while paused; path event timer respects pause; after level-up/specialization restore `currentPlayerIndex` + emit `turnStarted`
@@ -609,7 +611,7 @@ This project is for personal/educational use.
 
 ---
 
-**Current Version:** v4.4.0 (experimental UI branch)  
+**Current Version:** v4.4.1 (experimental UI branch) / **v4.3.1** (playtest)  
 **Last Updated:** 2026-03-20  
 **Status:** Play-test ready ✅  
 

@@ -1,6 +1,6 @@
 # Experimental layout branch (`cursor/ui-desktop-layout-tabs`)
 
-**Version:** v4.4.0 (includes all **v4.3.0** playtest fixes: multiplayer reconnect, PWA, mobile safe-area polish).
+**Version:** v4.4.1 (includes **v4.3.1** playtest layout fix: board/hand cards visible; pre-fit desktop column + fixed action bar), plus prior v4.3.0 reconnect/PWA/mobile polish.
 
 ## Desktop
 
