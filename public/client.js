@@ -1,3 +1,25 @@
+/** Client build label — bump with package.json / README. */
+const QC_VERSION = '4.2.3';
+
+/**
+ * Verbose client logs (voice, socket, grid, load game, etc.).
+ * Enable: `localStorage.setItem('qc_debug','1')` then refresh; disable: removeItem.
+ */
+function qcDebug(...args) {
+    try {
+        if (typeof localStorage !== 'undefined' && localStorage.getItem('qc_debug') === '1') {
+            console.log(...args);
+        }
+    } catch (_) { /* ignore */ }
+}
+
+function initQcAboutLines() {
+    const label = `Quest & Chronicle · v${QC_VERSION}`;
+    try {
+        document.querySelectorAll('.qc-about-line').forEach((el) => { el.textContent = label; });
+    } catch (_) { /* ignore */ }
+}
+
 // --- SHOP UI HANDLERS ---
 function renderShopInventory(inventory, shopId, stateOverride = null) {
     const inv = get('shop-inventory');
@@ -87,7 +109,7 @@ try {
         reconnectionAttempts: 3
     });
 } catch (e) {
-    console.log('[Socket] Failed to initialize, running in offline mode');
+    qcDebug('[Socket] Failed to initialize, running in offline mode');
     socket = { 
         emit: () => {}, 
         on: () => {},
@@ -199,15 +221,6 @@ const escapeHtml = (unsafe) => {
     if (typeof unsafe !== 'string') return '';
     return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 };
-
-/** Verbose UI/trace logs (notifications, modal gating). Enable: `localStorage.setItem('qc_debug','1')` then refresh. */
-function qcDebug(...args) {
-    try {
-        if (typeof localStorage !== 'undefined' && localStorage.getItem('qc_debug') === '1') {
-            console.log('[QC]', ...args);
-        }
-    } catch (_) { /* ignore */ }
-}
 
 // --- NOTIFICATION MANAGER (Best-Practice Orchestrator) ---
 const NOTIFICATION_PRIORITY = { normal: 1, important: 2, critical: 3 };
@@ -642,9 +655,9 @@ const voiceChatManager = {
     async join() {
         if (this.localStream) return;
         try {
-            console.log('[VC] Attempting to join voice chat...');
+            qcDebug('[VC] Attempting to join voice chat...');
             this.localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            console.log('[VC] Microphone access granted.');
+            qcDebug('[VC] Microphone access granted.');
             get('join-voice-btn').classList.add('hidden');
             get('mobile-join-voice-btn').classList.add('hidden');
             get('mute-voice-btn').classList.remove('hidden');
@@ -654,7 +667,7 @@ const voiceChatManager = {
 
             this.audioContainer = get('voice-chat-audio-container');
             socket.emit('join-voice-chat');
-            console.log('[VC] Emitted join-voice-chat.');
+            qcDebug('[VC] Emitted join-voice-chat.');
         } catch (err) {
             showToast('Microphone access denied.', 'error');
             console.error('[VC] Error accessing microphone:', err);
@@ -663,7 +676,7 @@ const voiceChatManager = {
 
     leave() {
         if (!this.localStream) return;
-        console.log('[VC] Leaving voice chat.');
+        qcDebug('[VC] Leaving voice chat.');
         socket.emit('leave-voice-chat');
 
         this.localStream.getTracks().forEach(track => track.stop());
@@ -674,7 +687,7 @@ const voiceChatManager = {
         }
         this.peers = {};
         if (this.audioContainer) this.audioContainer.innerHTML = '';
-        console.log('[VC] Local stream and peer connections closed.');
+        qcDebug('[VC] Local stream and peer connections closed.');
 
         get('join-voice-btn').classList.remove('hidden');
         get('mobile-join-voice-btn').classList.remove('hidden');
@@ -688,7 +701,7 @@ const voiceChatManager = {
         if (!this.localStream) return;
         const enabled = !this.localStream.getAudioTracks()[0].enabled;
         this.localStream.getAudioTracks()[0].enabled = enabled;
-        console.log(`[VC] Toggled mute. Mic enabled: ${enabled}`);
+        qcDebug(`[VC] Toggled mute. Mic enabled: ${enabled}`);
         const muteBtn = get('mute-voice-btn');
         const mobileMuteBtn = get('mobile-mute-voice-btn');
         muteBtn.innerHTML = enabled ? `<span class="material-symbols-outlined">mic_off</span>Mute` : `<span class="material-symbols-outlined">mic</span>Unmute`;
@@ -697,10 +710,10 @@ const voiceChatManager = {
 
     addPeer(peerId, isInitiator) {
         if (this.peers[peerId]) {
-            console.log(`[VC] Peer connection already exists for ${peerId}.`);
+            qcDebug(`[VC] Peer connection already exists for ${peerId}.`);
             return;
         }
-        console.log(`[VC] Adding peer ${peerId}. Initiator: ${isInitiator}`);
+        qcDebug(`[VC] Adding peer ${peerId}. Initiator: ${isInitiator}`);
         const peer = new RTCPeerConnection({
             iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
         });
@@ -709,24 +722,24 @@ const voiceChatManager = {
         this.localStream.getTracks().forEach(track => {
             peer.addTrack(track, this.localStream);
         });
-        console.log(`[VC] Added local stream tracks to peer ${peerId}.`);
+        qcDebug(`[VC] Added local stream tracks to peer ${peerId}.`);
 
         peer.onicecandidate = (event) => {
             if (event.candidate) {
-                console.log(`[VC] Sending ICE candidate to ${peerId}.`);
+                qcDebug(`[VC] Sending ICE candidate to ${peerId}.`);
                 socket.emit('webrtc-signal', { to: peerId, signal: { candidate: event.candidate } });
             }
         };
 
         peer.ontrack = (event) => {
-            console.log(`[VC] Received remote track from ${peerId}.`);
+            qcDebug(`[VC] Received remote track from ${peerId}.`);
             let audioEl = get(`audio-${peerId}`);
             if (!audioEl) {
                 audioEl = document.createElement('audio');
                 audioEl.id = `audio-${peerId}`;
                 audioEl.autoplay = true;
                 this.audioContainer.appendChild(audioEl);
-                console.log(`[VC] Created audio element for ${peerId}.`);
+                qcDebug(`[VC] Created audio element for ${peerId}.`);
             }
             audioEl.srcObject = event.streams[0];
         };
@@ -734,10 +747,10 @@ const voiceChatManager = {
         if (isInitiator) {
             peer.onnegotiationneeded = async () => {
                 try {
-                    console.log(`[VC] Negotiation needed for ${peerId}. Creating offer...`);
+                    qcDebug(`[VC] Negotiation needed for ${peerId}. Creating offer...`);
                     const offer = await peer.createOffer();
                     await peer.setLocalDescription(offer);
-                    console.log(`[VC] Sending offer to ${peerId}.`);
+                    qcDebug(`[VC] Sending offer to ${peerId}.`);
                     socket.emit('webrtc-signal', { to: peerId, signal: { sdp: peer.localDescription } });
                 } catch (err) { console.error(`[VC] Error creating offer for ${peerId}:`, err); }
             };
@@ -746,7 +759,7 @@ const voiceChatManager = {
 
     removePeer(peerId) {
         if (this.peers[peerId]) {
-            console.log(`[VC] Removing peer ${peerId}.`);
+            qcDebug(`[VC] Removing peer ${peerId}.`);
             this.peers[peerId].close();
             delete this.peers[peerId];
         }
@@ -755,27 +768,27 @@ const voiceChatManager = {
     },
 
     async handleSignal({ from, signal }) {
-        console.log(`[VC] Received signal from ${from}.`);
+        qcDebug(`[VC] Received signal from ${from}.`);
         let peer = this.peers[from];
         if (!peer) {
-            console.log(`[VC] Peer for ${from} not found, creating new peer connection.`);
+            qcDebug(`[VC] Peer for ${from} not found, creating new peer connection.`);
             this.addPeer(from, false);
             peer = this.peers[from];
         }
         
         try {
             if (signal.sdp) {
-                console.log(`[VC] Setting remote description for ${from}.`);
+                qcDebug(`[VC] Setting remote description for ${from}.`);
                 await peer.setRemoteDescription(new RTCSessionDescription(signal.sdp));
                 if (signal.sdp.type === 'offer') {
-                    console.log(`[VC] Signal from ${from} was an offer. Creating answer...`);
+                    qcDebug(`[VC] Signal from ${from} was an offer. Creating answer...`);
                     const answer = await peer.createAnswer();
                     await peer.setLocalDescription(answer);
-                    console.log(`[VC] Sending answer to ${from}.`);
+                    qcDebug(`[VC] Sending answer to ${from}.`);
                     socket.emit('webrtc-signal', { to: from, signal: { sdp: peer.localDescription } });
                 }
             } else if (signal.candidate) {
-                console.log(`[VC] Adding ICE candidate from ${from}.`);
+                qcDebug(`[VC] Adding ICE candidate from ${from}.`);
                 await peer.addIceCandidate(new RTCIceCandidate(signal.candidate));
             }
         } catch (err) {
@@ -1718,22 +1731,22 @@ function initializeUI() {
         
         // OFFLINE MODE: Create solo game if explicitly offline or no connection
         if (!navigator.onLine) {
-            console.log('[Offline] No network connection - creating solo game');
+            qcDebug('[Offline] No network connection - creating solo game');
             createOfflineSoloGame();
             return;
         }
         
         // Check if user explicitly wants offline mode
         if (offlineMode.isEnabled()) {
-            console.log('[Offline] Offline mode enabled - creating solo game');
+            qcDebug('[Offline] Offline mode enabled - creating solo game');
             createOfflineSoloGame();
             return;
         }
         
         
-        console.log('[Create] Attempting to create online room...');
-        console.log('[Create] Socket connected:', isSocketConnected);
-        console.log('[Create] Socket object:', socket);
+        qcDebug('[Create] Attempting to create online room...');
+        qcDebug('[Create] Socket connected:', isSocketConnected);
+        qcDebug('[Create] Socket object:', socket);
         
         // Try to create room online first
         try {
@@ -1757,9 +1770,9 @@ function initializeUI() {
             }
             
             socket.emit('createRoom', payload);
-            console.log('[Create] Room creation request sent');
+            qcDebug('[Create] Room creation request sent');
         } catch (error) {
-            console.log('[Create] Error creating room online, falling back to offline:', error);
+            qcDebug('[Create] Error creating room online, falling back to offline:', error);
             createOfflineSoloGame();
         }
     });
@@ -1882,13 +1895,13 @@ function initializeUI() {
             // Check if save is less than 24 hours old
             const age = Date.now() - timestamp;
             if (age < 24 * 60 * 60 * 1000) {
-                console.log('[SavedSession] Attempting to rejoin saved game...');
+                qcDebug('[SavedSession] Attempting to rejoin saved game...');
                 socket.emit('rejoinRoom', { roomId, playerId });
                 
                 // Clear the saved session after attempting to rejoin
                 localStorage.removeItem('qc_game_session');
             } else {
-                console.log('[SavedSession] Saved session expired, clearing...');
+                qcDebug('[SavedSession] Saved session expired, clearing...');
                 localStorage.removeItem('qc_game_session');
             }
         } catch (e) {
@@ -1960,7 +1973,7 @@ function handleGameAreaClick(e) {
                     if (cardElement) {
                         const interactionName = button.dataset.interactionName;
                         // Directly send interaction without redundant confirmation
-                        console.log('[Interact] Sending interaction:', cardId, interactionName);
+                        qcDebug('[Interact] Sending interaction:', cardId, interactionName);
                         socket.emit('playerAction', {
                             action: 'resolveSkillInteraction',
                             cardId: cardId,
@@ -2061,7 +2074,7 @@ function initializeGameUIListeners() {
                               target.closest('[data-container="start-game-btn"]');
         
         if (isActionButton && !clientState.turnPopupReady) {
-            console.log('[ActionBlock] Action blocked - turn popup not ready yet');
+            qcDebug('[ActionBlock] Action blocked - turn popup not ready yet');
             showToast('Please wait for your turn to begin...', 'info', 2000);
             return;
         }
@@ -2409,13 +2422,13 @@ function initializeGameUIListeners() {
     get('narrative-confirm-btn').addEventListener('click', () => {
         if (!clientState.activeItem) return;
         
-        console.log('[Attack] Narrative confirmed, activeItem:', clientState.activeItem);
-        console.log('[Attack] OfflineActionHandler exists:', typeof OfflineActionHandler);
-        console.log('[Attack] Offline mode:', typeof OfflineActionHandler !== 'undefined' && OfflineActionHandler.isOffline());
+        qcDebug('[Attack] Narrative confirmed, activeItem:', clientState.activeItem);
+        qcDebug('[Attack] OfflineActionHandler exists:', typeof OfflineActionHandler);
+        qcDebug('[Attack] Offline mode:', typeof OfflineActionHandler !== 'undefined' && OfflineActionHandler.isOffline());
         
         // Check offline mode
         if (typeof OfflineActionHandler !== 'undefined' && OfflineActionHandler.isOffline()) {
-            console.log('[Attack] Using offline dice flow');
+            qcDebug('[Attack] Using offline dice flow');
             // Show attack roll modal for parity
             showDiceRollModal({
                 title: 'Attack Roll',
@@ -2426,8 +2439,8 @@ function initializeGameUIListeners() {
                 targetId: clientState.activeItem.targetId
             });
         } else {
-            console.log('[Attack] Using online socket.emit');
-            console.log('[Attack] Sending to server:', {
+            qcDebug('[Attack] Using online socket.emit');
+            qcDebug('[Attack] Sending to server:', {
                 action: 'attack',
                 weaponId: clientState.activeItem.weaponId,
                 targetId: clientState.activeItem.targetId
@@ -2595,7 +2608,7 @@ function revealYourTurnBanner() {
 
     setTimeout(() => {
         clientState.turnPopupReady = true;
-        console.log('[TurnPopup] Turn popup ready - actions now allowed');
+        qcDebug('[TurnPopup] Turn popup ready - actions now allowed');
     }, 500);
 
     setTimeout(() => popup.classList.add('hidden'), 2500);
@@ -3311,7 +3324,7 @@ function showStatDetailModal(stat) {
 
 
 function showHelpModal() {
-    console.log('[Guide] showHelpModal() called');
+    qcDebug('[Guide] showHelpModal() called');
     const modal = get('help-modal');
     if (!modal) {
         console.error('[Guide] help-modal element not found!');
@@ -3320,7 +3333,7 @@ function showHelpModal() {
     clientState.helpModalPage = 0;
     renderHelpModalContent();
     modal.classList.remove('hidden');
-    console.log('[Guide] Modal shown successfully');
+    qcDebug('[Guide] Modal shown successfully');
 }
 function hideHelpModal() {
     get('help-modal').classList.add('hidden');
@@ -3878,7 +3891,7 @@ function handleDiceRoll() {
 // --- 6. SOCKET.IO EVENT HANDLERS ---
 socket.on('connect', () => {
     myId = socket.id;
-    console.log('Connected to server with ID:', socket.id);
+    qcDebug('Connected to server with ID:', socket.id);
     // If we have a saved identity, attempt seamless rejoin
     const roomId = sessionStorage.getItem('qc_roomId');
     const playerId = sessionStorage.getItem('qc_playerId');
@@ -4166,7 +4179,7 @@ socket.on('playerIdentity', ({ playerId, roomId }) => {
 socket.on('turnStarted', ({ playerId }) => {
     // CRITICAL FIX: Reset turn popup ready flag for any turn change
     clientState.turnPopupReady = false;
-    console.log('[TurnStarted] Turn popup ready flag reset - actions blocked until popup displays');
+    qcDebug('[TurnStarted] Turn popup ready flag reset - actions blocked until popup displays');
     
     if (playerId !== myId) {
         // Not my turn - keep actions blocked
@@ -4201,7 +4214,7 @@ socket.on('turnStarted', ({ playerId }) => {
 socket.on('actionError', (message) => {
     // Don't show socket errors in offline mode
     if (offlineMode.isEnabled()) {
-        console.log('[Offline] Ignoring socket actionError:', message);
+        qcDebug('[Offline] Ignoring socket actionError:', message);
         return;
     }
     
@@ -4526,7 +4539,7 @@ socket.on('diceRollError', () => {
     
     // Don't show dice roll errors in offline mode
     if (offlineMode.isEnabled()) {
-        console.log('[Offline] Ignoring socket diceRollError');
+        qcDebug('[Offline] Ignoring socket diceRollError');
         return;
     }
     showToast('There was an error with the roll.', 'error');
@@ -4534,15 +4547,15 @@ socket.on('diceRollError', () => {
 
 // Voice Chat Signaling
 socket.on('existing-voice-chatters', (chatterIds) => {
-    console.log('[VC] Received existing chatters:', chatterIds);
+    qcDebug('[VC] Received existing chatters:', chatterIds);
     chatterIds.forEach(id => voiceChatManager.addPeer(id, true));
 });
 socket.on('new-voice-chatter', (chatterId) => {
-    console.log('[VC] New chatter joined:', chatterId);
+    qcDebug('[VC] New chatter joined:', chatterId);
     voiceChatManager.addPeer(chatterId, false);
 });
 socket.on('voice-chatter-left', (chatterId) => {
-    console.log('[VC] Chatter left:', chatterId);
+    qcDebug('[VC] Chatter left:', chatterId);
     voiceChatManager.removePeer(chatterId);
 });
 socket.on('webrtc-signal', (payload) => {
@@ -4588,13 +4601,13 @@ window.addEventListener('offline', () => {
 // CRITICAL FIX: Handle app suspension/backgrounding
 document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
-        console.log('[App] App backgrounded/suspended');
+        qcDebug('[App] App backgrounded/suspended');
         // App is being backgrounded - no action needed, game continues
     } else {
-        console.log('[App] App foregrounded - checking connection');
+        qcDebug('[App] App foregrounded - checking connection');
         // App is being foregrounded - check if we need to reconnect
         if (!isSocketConnected && currentRoomState && currentRoomState.id && currentRoomState.gameState?.phase === 'started') {
-            console.log('[App] Game in progress but disconnected, enabling offline mode');
+            qcDebug('[App] Game in progress but disconnected, enabling offline mode');
             offlineMode.enable();
             showToast('Welcome back! Continuing in offline mode.', 'info', 3000);
         }
@@ -4604,8 +4617,8 @@ document.addEventListener('visibilitychange', () => {
 socket.on('connect', () => {
     isSocketConnected = true;
     updateConnectionStatus();
-    console.log('[Socket] Connected to server');
-    console.log('[Socket] Connection status updated:', isSocketConnected);
+    qcDebug('[Socket] Connected to server');
+    qcDebug('[Socket] Connection status updated:', isSocketConnected);
     
     // Prefer exact rejoin using stored identity
     const roomId = sessionStorage.getItem('qc_roomId');
@@ -4625,11 +4638,11 @@ socket.on('connect', () => {
 socket.on('disconnect', (reason) => {
     isSocketConnected = false;
     updateConnectionStatus();
-    console.log('[Socket] Disconnected from server:', reason);
+    qcDebug('[Socket] Disconnected from server:', reason);
     
     // CRITICAL FIX: Auto-enable offline mode when disconnected
     if (currentRoomState && currentRoomState.id && currentRoomState.gameState?.phase === 'started') {
-        console.log('[Socket] Game in progress, enabling offline mode');
+        qcDebug('[Socket] Game in progress, enabling offline mode');
         offlineMode.enable();
         showToast('Connection lost - switching to offline mode. Your game continues!', 'warning', 5000);
     } else {
@@ -4645,7 +4658,7 @@ socket.on('disconnect', (reason) => {
 socket.on('connect_error', () => {
     isSocketConnected = false;
     updateConnectionStatus();
-    console.log('[Socket] Connection error');
+    qcDebug('[Socket] Connection error');
 });
 
 // ===========================
@@ -4672,11 +4685,11 @@ const combatGrid = {
         const testImg = new Image();
         testImg.onload = () => {
             this.assetsLoaded = true;
-            console.log('[Grid] Pixel art assets detected and loaded');
+            qcDebug('[Grid] Pixel art assets detected and loaded');
         };
         testImg.onerror = () => {
             this.assetsLoaded = false;
-            console.log('[Grid] No pixel art assets found, using emoji fallback');
+            qcDebug('[Grid] No pixel art assets found, using emoji fallback');
         };
         testImg.src = '/assets/tiles/stone-floor.png';
     },
@@ -4776,10 +4789,10 @@ const combatGrid = {
                 gridPanel.classList.remove('hidden');
                 gridPanel.style.display = 'block';
                 gridPanel.style.visibility = 'visible';
-                console.log('[Grid] Grid force shown - game started');
+                qcDebug('[Grid] Grid force shown - game started');
             } else {
                 gridPanel.classList.add('hidden');
-                console.log('[Grid] Grid hidden - not in game yet');
+                qcDebug('[Grid] Grid hidden - not in game yet');
                 return;
             }
         } else {
@@ -5094,7 +5107,7 @@ const combatGrid = {
                     movementCost: cost
                 });
             } else {
-                console.log('[Move] Socket not connected, falling back to offline mode');
+                qcDebug('[Move] Socket not connected, falling back to offline mode');
                 OfflineActionHandler.handleAction('move', {
                     targetX: x,
                     targetY: y,
@@ -6205,7 +6218,7 @@ document.addEventListener('DOMContentLoaded', () => {
         menuSettingsBtn.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            console.log('[Settings] Opening settings modal from menu');
+            qcDebug('[Settings] Opening settings modal from menu');
             const settingsModal = get('settings-modal');
             if (settingsModal) {
                 settingsModal.classList.remove('hidden');
@@ -6221,6 +6234,7 @@ window.addEventListener('load', updateConnectionStatus);
 // Initialize Notification Manager once DOM is ready
 window.addEventListener('DOMContentLoaded', () => {
     try { NotificationManager.init(); } catch (_) {}
+    try { initQcAboutLines(); } catch (_) {}
 });
 
 // Update character viewer on game state changes
@@ -6445,8 +6459,8 @@ function loadGameFromSlot(slotNumber) {
         return;
     }
     
-    console.log('[LoadGame] Raw save data:', saveData);
-    console.log('[LoadGame] Game data:', saveData.gameData);
+    qcDebug('[LoadGame] Raw save data:', saveData);
+    qcDebug('[LoadGame] Game data:', saveData.gameData);
     
     // Close modal
     get('load-slot-modal')?.classList.add('hidden');
@@ -6480,9 +6494,9 @@ function loadGameFromSlot(slotNumber) {
     myId = loadedGame.myId;
     myPlayerName = loadedGame.myPlayerName || 'Player';
     
-    console.log('[LoadGame] Restored currentRoomState:', currentRoomState);
-    console.log('[LoadGame] myId:', myId);
-    console.log('[LoadGame] Players:', currentRoomState.players);
+    qcDebug('[LoadGame] Restored currentRoomState:', currentRoomState);
+    qcDebug('[LoadGame] myId:', myId);
+    qcDebug('[LoadGame] Players:', currentRoomState.players);
     
     // Show game screen
     get('menu-screen').classList.remove('active');
@@ -6505,7 +6519,7 @@ function loadGameFromSlot(slotNumber) {
         }
         renderUI();
         combatGrid.render();
-        console.log('[LoadGame] UI rendered');
+        qcDebug('[LoadGame] UI rendered');
     }, 100);
     
     showToast('Offline game loaded! You can continue playing.', 'success', 3000);
@@ -6842,11 +6856,11 @@ document.addEventListener('click', (e) => {
 
 // Skill Check Roll Handler (for trapped chests, etc.)
 socket.on('promptSkillCheckRoll', (data) => {
-    console.log('[SkillCheck] Received prompt:', data);
+    qcDebug('[SkillCheck] Received prompt:', data);
     
     // Don't show skill check prompts in offline mode
     if (offlineMode.isEnabled()) {
-        console.log('[Offline] Ignoring socket promptSkillCheckRoll');
+        qcDebug('[Offline] Ignoring socket promptSkillCheckRoll');
         return;
     }
     
@@ -6871,7 +6885,7 @@ function renderGuideScreen() {
         return;
     }
     
-    console.log('[Guide] Rendering guide screen');
+    qcDebug('[Guide] Rendering guide screen');
     
     // Generate Table of Contents
     let tocHTML = '';
@@ -6918,7 +6932,7 @@ function renderGuideScreen() {
         });
     }
     
-    console.log('[Guide] Guide screen rendered with', helpContent.length, 'pages');
+    qcDebug('[Guide] Guide screen rendered with', helpContent.length, 'pages');
 }
 
 function scrollToGuidePage(pageIndex) {
@@ -6975,7 +6989,7 @@ function filterGuideContent(searchTerm) {
 
 // Create offline solo game
 function createOfflineSoloGame() {
-    console.log('[Offline] Creating new solo game');
+    qcDebug('[Offline] Creating new solo game');
     
     // Set offline mode
     offlineMode.enable();

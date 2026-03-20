@@ -1,10 +1,10 @@
-# Playtest checklist (v4.2.2)
+# Playtest checklist (v4.2.3)
 
 Use this for a quick smoke pass before sharing a build.
 
 **Before manual QA:** run `npm test` (Node 18+).
 
-**Optional (debugging):** in the browser console, `localStorage.setItem('qc_debug','1')` then refresh to log notification/modal trace details. Remove with `localStorage.removeItem('qc_debug')`.
+**Optional (debugging):** in the browser console, `localStorage.setItem('qc_debug','1')` then refresh to log notifications, modals, voice (WebRTC), socket lifecycle, grid, and load-game details. Remove with `localStorage.removeItem('qc_debug')`.
 
 ## Online (multiplayer)
 
