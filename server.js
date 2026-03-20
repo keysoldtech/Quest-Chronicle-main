@@ -2650,6 +2650,21 @@ class GameManager {
                  return;
             }
 
+            // Pending dungeon encounter (NPC trade/rescue/etc.) must work even if turn order advanced
+            if (payload.action === 'resolveEvent') {
+                if (!player.pendingDungeonEvent) {
+                    return socket.emit('actionError', 'No active encounter to resolve.');
+                }
+                this.resolveEventChoice(room, player, payload.eventId, payload.choiceIndex);
+                return;
+            }
+
+            // Shopping can happen while paused / not "your combat turn" for every explorer
+            if (payload.action === 'buyItem' && room.gameState.shop) {
+                this.resolveBuy(room, player, payload.cardId, payload.price, payload.shopId);
+                return;
+            }
+
             // CRITICAL FIX: Check if it's the player's turn before allowing actions
             const currentTurnPlayerId = room.gameState.turnOrder[room.gameState.currentPlayerIndex];
             if (player.id !== currentTurnPlayerId) {
@@ -2765,7 +2780,6 @@ class GameManager {
                 case 'persuade': this.resolvePersuade(room, player, payload.targetId); break;
                 case 'move': this.resolveMove(room, player, payload.targetX, payload.targetY, payload.movementCost); break;
                 case 'selectSpecialization': this.resolveSpecializationChoice(room, player, payload.branch, payload.tier); break;
-                case 'resolveEvent': this.resolveEventChoice(room, player, payload.eventId, payload.choiceIndex); break;
                 case 'useAbility':
                     const classData = gameData.classes[player.class];
                     if (classData && classData.ability.name === payload.abilityName) this.resolveUseAbility(room, player, classData.ability);
@@ -4451,11 +4465,20 @@ class GameManager {
             const card = room.gameState.board.environment.find(c => c.id === interactionData.cardId) ||
                          room.gameState.board.monsters.find(c => c.id === interactionData.cardId);
             const interaction = card?.skillInteractions.find(i => i.name === interactionData.interactionName);
+            if (!interaction) return { source: null, type: null };
+            const sc = room.gameState.skillChallenge;
+            if (interaction.eventType === 'multi_stage_skill_challenge' && Array.isArray(interaction.stages) && interaction.stages.length > 0) {
+                const idx = (sc?.isActive && sc.targetId === interactionData.cardId) ? (sc.currentStage || 0) : 0;
+                const stage = interaction.stages[idx] || interaction.stages[0];
+                return { source: stage, type: 'card' };
+            }
             return { source: interaction, type: 'card' };
-        } else if (room.gameState.skillChallenge.isActive) { // From a world event
+        } else if (room.gameState.skillChallenge.isActive) {
             const challenge = room.gameState.skillChallenge.details;
             const stage = challenge.stages ? challenge.stages[room.gameState.skillChallenge.currentStage] : challenge;
-            return { source: stage, type: 'event' };
+            // Card/board challenges set targetId (environmental chest, etc.); world events use targetId null.
+            const isCard = room.gameState.skillChallenge.targetId != null;
+            return { source: stage, type: isCard ? 'card' : 'event' };
         }
         return { source: null, type: null };
     }
@@ -4498,7 +4521,14 @@ class GameManager {
             let resultText = `${player.name} attempts the check... It's a ${outcome}! (Rolled ${roll} + ${bonus} vs DC ${source.dc})`;
             if(payload.hasAdvantage) resultText += ` with advantage (rolls: ${roll1}, ${roll2})`;
             room.chatLog.push({ type: outcome === 'Success' ? 'action-good' : 'system-bad', rollerName: player.name, text: resultText, timestamp: Date.now() });
-            io.to(room.id).emit('skillCheckResolved', { roll, bonus, total, targetAC: source.dc, outcome });
+            io.to(room.id).emit('skillCheckResolved', {
+                rollerId: player.id,
+                roll,
+                bonus,
+                total,
+                targetAC: source.dc,
+                outcome
+            });
     
             if (outcome === 'Success') {
                 this._addXpToPlayer(room, player, 10);
@@ -4525,26 +4555,48 @@ class GameManager {
                  room.gameState.runScore += (outcome === 'Success' ? 5 : -2);
             }
     
-            if (type === 'event') {
-                 if (outcome === 'Success' && source.stages && room.gameState.skillChallenge.currentStage < source.stages.length - 1) {
-                    room.gameState.skillChallenge.currentStage++;
-                 } else {
-                    room.gameState.skillChallenge.isActive = false;
-                    // CRITICAL FIX: Advance turn when path-related skill challenge completes
-                    if (source.sourceTag === 'pathRisk') {
+            const sc = room.gameState.skillChallenge;
+            const details = sc?.details;
+            const isMultiStageCard = sc?.targetId != null &&
+                details?.eventType === 'multi_stage_skill_challenge' &&
+                Array.isArray(details.stages) &&
+                details.stages.length > 1;
+
+            if (isMultiStageCard) {
+                if (outcome === 'Success' && sc.currentStage < details.stages.length - 1) {
+                    sc.currentStage++;
+                    const nextStage = details.stages[sc.currentStage];
+                    const advantageItem = player.hand.find(c =>
+                        c.effect?.grantsAdvantage && c.relevantSkill && nextStage.skill &&
+                        c.relevantSkill.toLowerCase() === String(nextStage.skill).toLowerCase()
+                    );
+                    io.to(room.id).emit('promptSkillCheckRoll', {
+                        rollerId: player.id,
+                        rollerName: player.name,
+                        title: `Skill Check: ${details.name || 'Challenge'}`,
+                        description: nextStage.description || `Rolling a ${String(nextStage.skill || '').toUpperCase()} check against DC ${nextStage.dc}.`,
+                        dice: 'd20',
+                        bonus: player.stats[nextStage.skill] || 0,
+                        targetAC: nextStage.dc,
+                        hasAdvantage: !!advantageItem,
+                        relevantItemName: advantageItem ? advantageItem.name : null,
+                        interactionData: { cardId: sc.targetId, interactionName: details.name }
+                    });
+                } else {
+                    sc.isActive = false;
+                }
+            } else if (type === 'event') {
+                if (outcome === 'Success' && details?.stages && sc.currentStage < details.stages.length - 1) {
+                    sc.currentStage++;
+                } else {
+                    sc.isActive = false;
+                    if (details?.sourceTag === 'pathRisk') {
                         this.moveToNextTurn(room);
                     }
-                 }
-            } else if (type === 'card' && source.eventType === 'multi_stage_skill_challenge') {
-                 if (outcome === 'Success' && room.gameState.skillChallenge.currentStage < source.stages.length - 1) {
-                    room.gameState.skillChallenge.currentStage++;
-                 } else {
-                     room.gameState.skillChallenge.isActive = false;
-                 }
+                }
             } else {
-                room.gameState.skillChallenge.isActive = false;
-                // CRITICAL FIX: Advance turn when path-related skill challenge completes
-                if (source.sourceTag === 'pathRisk') {
+                if (sc) sc.isActive = false;
+                if (source?.sourceTag === 'pathRisk') {
                     this.moveToNextTurn(room);
                 }
             }
@@ -4764,6 +4816,7 @@ io.on('connection', (socket) => {
         if (!room || !choice) return;
         // Only the designated chooser can confirm the next room
         if (room.gameState.pathChooserId && socket.id !== room.gameState.pathChooserId) return;
+        const pathChooserId = room.gameState.pathChooserId || socket.id;
         const depth = room.gameState.depth || 1;
         room.chatLog.push({ type: 'system', text: `Next room: ${choice.type.toUpperCase()} (Depth ${depth})`, timestamp: Date.now() });
         room.gameState.nextRooms = [];
@@ -4786,9 +4839,9 @@ io.on('connection', (socket) => {
             // Combat rooms just advance turns - DM will spawn monsters
             gameManager.moveToNextTurn(room);
         } else if (choice.type === 'event') {
-            const host = room.players[room.hostId];
-            if (host) {
-                gameManager._triggerDungeonEvent(room, host);
+            const chooser = room.players[pathChooserId];
+            if (chooser) {
+                gameManager._triggerDungeonEvent(room, chooser);
                 setTimeout(() => {
                     if (!room.gameState.skillChallenge?.isActive) {
                         gameManager.moveToNextTurn(room);

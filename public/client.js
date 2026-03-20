@@ -1,5 +1,5 @@
 /** Client build label — bump with package.json / README. */
-const QC_VERSION = '4.2.4';
+const QC_VERSION = '4.2.5';
 
 /**
  * Verbose client logs (voice, socket, grid, load game, etc.).
@@ -3877,6 +3877,7 @@ function handleDiceRoll() {
                     weaponId: data.weaponId,
                     targetId: data.targetId,
                     hasAdvantage: data.hasAdvantage,
+                    interactionData: data.interactionData
                 });
             }
 
@@ -4489,6 +4490,10 @@ socket.on('skillCheckResolved', (data) => {
     }
     const modal = get('dice-roll-modal');
     if (data.rollerId === myId && !modal.classList.contains('hidden')) {
+        const dieText = modal.querySelector('.die-svg .die-text');
+        if (dieText && data.roll != null) {
+            dieText.textContent = String(data.roll);
+        }
         const resultLine = get('dice-roll-result-line');
         const details = get('dice-roll-details');
         if (resultLine && details) {
