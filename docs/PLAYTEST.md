@@ -1,4 +1,4 @@
-# Playtest checklist (v4.2.8)
+# Playtest checklist (v4.4.0 experimental / v4.3.0 playtest)
 
 Use this for a quick smoke pass before sharing a build.
 
@@ -6,9 +6,14 @@ Use this for a quick smoke pass before sharing a build.
 
 **Optional (debugging):** in the browser console, `localStorage.setItem('qc_debug','1')` then refresh to log notifications, modals, voice (WebRTC), socket lifecycle, grid, and load-game details. Remove with `localStorage.removeItem('qc_debug')`.
 
+**PWA / mobile install:** open the deployed site in mobile Chrome or Safari → “Add to Home Screen” → launch from icon (standalone). Confirm no double browser chrome; safe-area on notched devices looks acceptable.
+
+**Experimental branch (`cursor/ui-desktop-layout-tabs`):** mobile uses a **top tab strip** (Play / Hero / Party / Journal) instead of the five-icon bottom bar; **Journal** merges world events, discoveries, and chat. Desktop has the **View** toolbar (Full / Table / Party & log). Last mobile tab is stored in `qc_mobile_tab`.
+
 ## Online (multiplayer)
 
 - [ ] Connect two browsers (or incognito + normal), same room.
+- [ ] **Reconnect:** start a run, toggle airplane mode briefly (or kill tab and reopen same origin) → session should **rejoin** without duplicate room spam; toasts not duplicated every second.
 - [ ] Class selection → grid appears, turn order advances.
 - [ ] Dice modal: roll resolves without `NaN`; modal dismisses cleanly.
 - [ ] Move on grid: only valid cells highlight; mobile grid button works when phase is `started`.

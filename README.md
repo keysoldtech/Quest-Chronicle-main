@@ -1,6 +1,6 @@
 # 🎮 Quest & Chronicle - Multiplayer Tactical Card Game
 
-**Version:** v4.2.8 *(experimental desktop layout tabs — branch `cursor/ui-desktop-layout-tabs`)*  
+**Version:** v4.4.0 *(experimental — desktop + mobile layout tabs; branch `cursor/ui-desktop-layout-tabs`)*  
 **Status:** Play-Testing Ready ✅  
 **Platform:** Web (PWA) - Works on all devices  
 **Modes:** Online Multiplayer + Offline Solo Play  
@@ -536,7 +536,8 @@ This project is for personal/educational use.
 
 ## 🎯 Version History
 
-- **v4.2.8** (Experimental branch) - Desktop **View** toolbar: Full (default) / **Table** (board + hand only) / **Party & log** (party + journal, board hidden); preference `localStorage` key `qc_desktop_layout`
+- **v4.4.0** (Experimental branch) - Includes **v4.3.0** playtest fixes; desktop **View** toolbar (Full / Table / Party & log); mobile **tab strip** (Play / Hero / Party / Journal) with Journal = world events + discoveries + chat; bottom icon bar hidden on this branch; prefs `qc_desktop_layout` + `qc_mobile_tab` (last screen)
+- **v4.3.0** - Multiplayer: single `connect` handler (no duplicate `rejoinRoom`); longer reconnect backoff; clear offline bridge on reconnect; guarded desktop log tabs listener. PWA: manifest icons/scope/id, theme & install meta, SW cache bump. Mobile: safe-area insets, tighter panels, toast position.
 - **v4.2.7** - Desktop layout: `#game-screen` viewport lock (no double scroll); flex chain `min-height: 0`; board/hand flex; action bar moved into center column + `position: sticky` (aligns with grid)
 - **v4.2.6** - Turn flow: no `moveToNextTurn` while paused; path event timer respects pause; after level-up/specialization restore `currentPlayerIndex` + emit `turnStarted`
 - **v4.2.5** - Skill check: `skillCheckResolved` includes `rollerId`; `buyItem` while shop open bypasses turn gate; pending NPC `resolveEvent` before turn gate; multi-stage chest + path chooser fixes
@@ -608,7 +609,7 @@ This project is for personal/educational use.
 
 ---
 
-**Current Version:** v4.2.8 (experimental UI branch)  
+**Current Version:** v4.4.0 (experimental UI branch)  
 **Last Updated:** 2026-03-20  
 **Status:** Play-test ready ✅  
 
