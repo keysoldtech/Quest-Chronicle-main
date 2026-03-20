@@ -1,5 +1,5 @@
 /** Client build label — bump with package.json / README. */
-const QC_VERSION = '4.3.0';
+const QC_VERSION = '4.3.1';
 
 /**
  * Verbose client logs (voice, socket, grid, load game, etc.).
