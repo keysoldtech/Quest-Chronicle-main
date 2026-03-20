@@ -1565,8 +1565,23 @@ class GameManager {
     }
     
 
+    /** After level-up / specialization UI, snap turn pointer back to this explorer (interrupt-safe). */
+    _resumeTurnAfterInterrupt(room, player) {
+        if (!player || !room?.gameState?.turnOrder?.length) return;
+        const idx = room.gameState.turnOrder.indexOf(player.id);
+        if (idx !== -1) {
+            room.gameState.currentPlayerIndex = idx;
+        }
+    }
+
     moveToNextTurn(room) {
         if (room.gameState.winner) return;
+
+        // Do not advance while paused (level-up, shop, modals) — timers may fire mid-interrupt.
+        if (room.gameState.isPaused) {
+            console.log('[Turn] moveToNextTurn skipped — game is paused');
+            return;
+        }
         
         // CRITICAL FIX: Prevent race conditions with turn progression
         if (room.isProcessingTurn) {
@@ -2650,6 +2665,11 @@ class GameManager {
                  return;
             }
 
+            if (payload.action === 'selectSpecialization' && payload.branch != null && payload.tier != null) {
+                this.resolveSpecializationChoice(room, player, payload.branch, payload.tier);
+                return;
+            }
+
             // Pending dungeon encounter (NPC trade/rescue/etc.) must work even if turn order advanced
             if (payload.action === 'resolveEvent') {
                 if (!player.pendingDungeonEvent) {
@@ -2779,7 +2799,8 @@ class GameManager {
                 case 'intimidate': this.resolveIntimidate(room, player, payload.targetId); break;
                 case 'persuade': this.resolvePersuade(room, player, payload.targetId); break;
                 case 'move': this.resolveMove(room, player, payload.targetX, payload.targetY, payload.movementCost); break;
-                case 'selectSpecialization': this.resolveSpecializationChoice(room, player, payload.branch, payload.tier); break;
+                case 'selectSpecialization':
+                    break;
                 case 'useAbility':
                     const classData = gameData.classes[player.class];
                     if (classData && classData.ability.name === payload.abilityName) this.resolveUseAbility(room, player, classData.ability);
@@ -4317,19 +4338,10 @@ class GameManager {
         if (!anotherPlayerIsLeveling) {
             room.gameState.isPaused = false;
             room.gameState.pauseReason = '';
-            
-            // CRITICAL FIX: Check if it's still the leveled-up player's turn
-            // If so, just resume their turn (don't skip to next player!)
-            const currentTurnPlayerId = room.gameState.turnOrder[room.gameState.currentPlayerIndex];
-            if (currentTurnPlayerId === player.id) {
-                // It's still this player's turn - just unpause and let them continue
-                console.log(`[Level Up] ${player.name} completed level up - resuming their turn`);
-                this.emitGameState(room.id);
-            } else {
-                // They leveled up at end of turn or between turns - move to next
-                console.log(`[Level Up] ${player.name} completed level up - moving to next turn`);
-                this.moveToNextTurn(room);
-            }
+            this._resumeTurnAfterInterrupt(room, player);
+            console.log(`[Level Up] ${player.name} completed level up — resume`);
+            this.emitGameState(room.id);
+            io.to(room.id).emit('turnStarted', { playerId: player.id });
         } else {
             // Someone else is still leveling up. The game remains paused. Just update the UI.
             this.emitGameState(room.id);
@@ -4419,16 +4431,10 @@ class GameManager {
         if (!anotherPlayerIsLeveling) {
             room.gameState.isPaused = false;
             room.gameState.pauseReason = '';
-            
-            // CRITICAL FIX: Check if it's still the specialized player's turn
-            const currentTurnPlayerId = room.gameState.turnOrder[room.gameState.currentPlayerIndex];
-            if (currentTurnPlayerId === player.id) {
-                console.log(`[Specialization] ${player.name} completed specialization - resuming their turn`);
-                this.emitGameState(room.id);
-            } else {
-                console.log(`[Specialization] ${player.name} completed specialization - moving to next turn`);
-                this.moveToNextTurn(room);
-            }
+            this._resumeTurnAfterInterrupt(room, player);
+            console.log(`[Specialization] ${player.name} completed specialization — resume`);
+            this.emitGameState(room.id);
+            io.to(room.id).emit('turnStarted', { playerId: player.id });
         } else {
             this.emitGameState(room.id);
         }
@@ -4843,7 +4849,7 @@ io.on('connection', (socket) => {
             if (chooser) {
                 gameManager._triggerDungeonEvent(room, chooser);
                 setTimeout(() => {
-                    if (!room.gameState.skillChallenge?.isActive) {
+                    if (!room.gameState.skillChallenge?.isActive && !room.gameState.isPaused) {
                         gameManager.moveToNextTurn(room);
                     }
                 }, 1000);

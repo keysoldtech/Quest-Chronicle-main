@@ -1,4 +1,4 @@
-# Playtest checklist (v4.2.5)
+# Playtest checklist (v4.2.6)
 
 Use this for a quick smoke pass before sharing a build.
 
