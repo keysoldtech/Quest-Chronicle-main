@@ -1,0 +1,24 @@
+
+{
+  "name": "Quest & Chronicle",
+  "short_name": "Q&C",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#12181b",
+  "theme_color": "#4A1E3A",
+  "description": "Epic tactical RPG with synergies, specializations, and pixel art dungeon crawling!",
+  "icons": [
+    {
+      "src": "/icons/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+# Sprite Assets Directory
+
+Place your 32×32 character and monster sprite PNG files here.
+
+Expected files:
+
+Characters:
+- barbarian.png
+- warrior.png
+- rogue.png
+- ranger.png
+- mage.png
+- cleric.png
+
+Monsters:
+- goblin.png
+- wolf.png
+- skeleton.png
+- orc.png
+- spider.png
+- dragon.png
+- zombie.png
+
+See ../ASSETS_README.md for details.

@@ -1,0 +1,1243 @@
+<!-- 
+  --- INDEX ---
+  1.  METADATA & STYLESHEETS
+  2.  MENU SCREEN (#menu-screen)
+  3.  LEGEND & LEGACY SCREEN (#legacy-screen)
+  4.  GAME SCREEN (#game-screen)
+      - 4.1. GAME AREA (#game-area)
+          - 4.1.1. DESKTOP LAYOUT
+          - 4.1.2. MOBILE LAYOUT
+      - 4.2. SHARED OVERLAYS & MODALS
+  5.  SCRIPTS
+-->
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+        <title>Quest & Chronicle - Multiplayer Prototype</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=MedievalSharp&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="/animations.css">
+    <link rel="stylesheet" href="/character-viewer.css">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- Favicons -->
+    <!-- Favicon and App Icons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/logo.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/logo.png">
+    <link rel="shortcut icon" href="/icons/logo.png">
+    
+    <!-- Apple Touch Icon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/logo.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/icons/logo.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="/icons/logo.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="/icons/logo.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="/icons/logo.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="/icons/logo.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="/icons/logo.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="/icons/logo.png">
+    <link rel="apple-touch-icon" sizes="57x57" href="/icons/logo.png">
+    
+    <!-- iOS Web App -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Q&C">
+    
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#4A1E3A">
+    <meta name="apple-mobile-web-app-title" content="Quest & Chronicle">
+</head>
+<body>
+    <div class="background-animation"></div>
+    <div id="connection-status" class="connection-status" style="display: none;"></div>
+
+    <!-- INITIAL MENU SCREEN -->
+    <div id="menu-screen" class="screen active">
+        <div class="menu-background-layers">
+            <div class="bg-layer layer-1"></div>
+            <div class="bg-layer layer-2"></div>
+            <div class="ember-container">
+                <div class="ember"></div><div class="ember"></div><div class="ember"></div>
+                <div class="ember"></div><div class="ember"></div><div class="ember"></div>
+                <div class="ember"></div><div class="ember"></div><div class="ember"></div>
+                <div class="ember"></div><div class="ember"></div><div class="ember"></div>
+            </div>
+        </div>
+        <div class="pixel-art-container">
+            <div class="pixel-knight"></div>
+            <div class="pixel-monster-slime"></div>
+            <div class="pixel-monster-bat"></div>
+        </div>
+        <div class="menu-container">
+            <h1 class="game-title">Quest & Chronicle</h1>
+            <p class="game-subtitle">The Journey of Lore</p>
+            <div class="version-display">v4.2.1 The Journey of Lore</div>
+            
+            <div class="menu-section">
+                <label for="player-name-input" class="input-label">Enter Your Name</label>
+                <input type="text" id="player-name-input" placeholder="Hero's Name" maxlength="20">
+            </div>
+
+
+            <div class="menu-section game-actions">
+                <div class="game-action-card create-card">
+                    <h3>Create a New Quest</h3>
+                    <div class="mode-buttons">
+                        <button class="mode-btn" data-mode="Beginner">
+                            <span class="mode-title">Beginner</span>
+                        </button>
+                        <button class="mode-btn" data-mode="Advanced">
+                            <span class="mode-title">Advanced</span>
+                        </button>
+                        <button class="mode-btn" data-mode="Custom">
+                            <span class="mode-title">Custom</span>
+                        </button>
+                    </div>
+                    <div id="custom-settings" class="custom-settings hidden">
+                        <div class="settings-grid">
+                            <label><input type="checkbox" id="setting-weapon" checked> Start with Weapon</label>
+                            <label><input type="checkbox" id="setting-armor" checked> Start with Armor</label>
+                            <label>Items: <input type="number" id="setting-items" min="0" max="5" value="2"></label>
+                            <label>Spells: <input type="number" id="setting-spells" min="0" max="5" value="2"></label>
+                            <label><input type="checkbox" id="setting-weapon-ranges" checked> Enforce Weapon Ranges</label>
+                            <label>Loot Rate: <input type="number" id="setting-loot-rate" min="0" max="100" value="80">%</label>
+                            <label>Max Hand: <input type="number" id="setting-max-hand" min="5" max="12" value="7"></label>
+                            <label><input type="checkbox" id="setting-discovery-rolls" checked> Discovery Rolls</label>
+                        </div>
+                    </div>
+                    <button id="create-room-btn" class="btn btn-primary" disabled>Create Game</button>
+                </div>
+                <div class="or-divider">OR</div>
+                <div class="game-action-card join-card">
+                    <h3>Join an Adventure</h3>
+                    <input type="text" id="room-code-input" placeholder="4-Letter Code" maxlength="4">
+                    <button id="join-room-btn" class="btn btn-secondary" disabled>Join Game</button>
+                </div>
+            </div>
+            
+            <!-- Load Game Button -->
+            <div class="menu-section">
+                <button id="load-game-btn" class="btn btn-special btn-wide">
+                    <span class="material-symbols-outlined">folder_open</span>
+                    Load Saved Game
+                </button>
+                <button id="play-offline-btn" class="btn btn-secondary btn-wide" style="margin-top:8px;">
+                    <span class="material-symbols-outlined">wifi_off</span>
+                    Play Offline
+                </button>
+                <div id="offline-mode-indicator" class="build-number-font" style="margin-top:6px; opacity:0.8;">Offline Mode: Off</div>
+                <button id="daily-challenge-btn" class="btn btn-primary btn-wide" style="margin-top:8px;">
+                        <span class="material-symbols-outlined">calendar_today</span>
+                        Daily Challenge
+                    </button>
+            </div>
+            
+            <div id="menu-error" class="error-message hidden"></div>
+        </div>
+        <button id="goto-legacy-btn" class="btn-icon legacy-tome-btn" aria-label="View Legend and Legacy">
+            <span class="material-symbols-outlined">auto_stories</span>
+        </button>
+        <button id="goto-guide-btn" class="btn-icon guide-tome-btn" aria-label="View Game Guide">
+            <span class="material-symbols-outlined">menu_book</span>
+        </button>
+    </div>
+    
+    <!-- GAME GUIDE SCREEN (Full Page with Search) -->
+    <div id="guide-screen" class="screen">
+        <div class="guide-container">
+            <div class="guide-header">
+                <button id="guide-back-btn" class="btn btn-secondary">
+                    <span class="material-symbols-outlined">arrow_back</span> Back to Menu
+                </button>
+                <h1 class="screen-title">Game Guide</h1>
+            </div>
+            
+            <div class="guide-search-bar">
+                <span class="material-symbols-outlined search-icon">search</span>
+                <input type="text" id="guide-search-input" placeholder="Search guide (e.g., 'STR', 'flanking', 'weapon range')..." class="guide-search-input">
+            </div>
+            
+            <div class="guide-layout">
+                <div class="guide-sidebar">
+                    <h3>Quick Navigation</h3>
+                    <div id="guide-toc" class="guide-toc">
+                        <!-- Table of contents generated by JS -->
+                    </div>
+                </div>
+                
+                <div class="guide-content-area">
+                    <div id="guide-full-content" class="guide-full-content">
+                        <!-- All guide pages rendered here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LEGEND & LEGACY SCREEN -->
+    <div id="legacy-screen" class="screen">
+        <div class="legacy-container">
+            <div class="legacy-header">
+                <button id="legacy-back-btn" class="btn btn-secondary">
+                    <span class="material-symbols-outlined">arrow_back</span> Back
+                </button>
+                <h2 class="mobile-legacy-title">Tome of Heroes</h2>
+                <div class="account-xp-display">
+                    Account XP: <span id="legacy-xp-total">0</span>
+                </div>
+            </div>
+            <div class="legacy-book">
+                <!-- Left Page: Navigation -->
+                <aside id="legacy-class-nav" class="legacy-nav-page">
+                    <!-- Class Nav Items Rendered by JS -->
+                </aside>
+                <!-- Right Page: Content -->
+                <main id="legacy-class-content" class="legacy-content-page">
+                    <!-- Class Specific Content Rendered by JS -->
+                    <div class="legacy-actions" style="margin-top:12px;">
+                        <button id="save-loadout-btn" class="btn btn-secondary">
+                            <span class="material-symbols-outlined">save</span> Save Loadout
+                        </button>
+                        <div class="loadout-apply">
+                            <select id="loadout-slot-select" class="select">
+                                <option value="0">Slot 0</option>
+                                <option value="1">Slot 1</option>
+                                <option value="2">Slot 2</option>
+                            </select>
+                            <button id="apply-loadout-btn" class="btn btn-secondary">
+                                <span class="material-symbols-outlined">upload</span> Apply Loadout
+                            </button>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+    </div>
+    
+    <!-- MAIN GAME SCREEN (Your existing game UI) -->
+    <div id="game-screen" class="screen">
+        <div id="game-area" class="game-area">
+            
+            <!-- ================= DESKTOP LAYOUT ================= -->
+            <div class="game-area-desktop">
+                <header class="game-header">
+                    <div class="header-info">
+                         <p class="turn-indicator-font" data-container="turn-indicator">Waiting for game to start...</p>
+                         <div id="party-hope-meter-desktop" class="resource-bar hope-bar hidden" data-container="party-hope-meter">
+                            <span class="material-symbols-outlined resource-icon">stars</span>
+                            <div class="progress-bar-wrapper">
+                                <div class="progress-bar hope">
+                                    <div class="progress-bar-fill" data-container="party-hope-bar"></div>
+                                </div>
+                                <span class="progress-bar-text" data-container="party-hope-text"></span>
+                            </div>
+                        </div>
+                        <div class="player-resources-container hidden" data-container="player-resources">
+                             <div class="resource-bar">
+                                 <span class="material-symbols-outlined resource-icon hp">favorite</span>
+                                 <div class="progress-bar-wrapper">
+                                     <div class="progress-bar health">
+                                         <div class="progress-bar-fill" data-container="player-health-bar"></div>
+                                     </div>
+                                     <span class="progress-bar-text" data-container="player-health-text"></span>
+                                 </div>
+                             </div>
+                             <div class="resource-bar">
+                                 <span class="material-symbols-outlined resource-icon ap">bolt</span>
+                                 <div class="progress-bar-wrapper">
+                                     <div class="progress-bar ap">
+                                         <div class="progress-bar-fill" data-container="player-ap-bar"></div>
+                                     </div>
+                                     <span class="progress-bar-text" data-container="player-ap-text"></span>
+                                 </div>
+                             </div>
+                             <div class="resource-bar">
+                                <span class="material-symbols-outlined resource-icon xp">workspace_premium</span>
+                                <div class="progress-bar-wrapper">
+                                    <div class="progress-bar xp">
+                                        <div class="progress-bar-fill" data-container="player-xp-bar"></div>
+                                    </div>
+                                    <span class="progress-bar-text" data-container="player-xp-text"></span>
+                                </div>
+                            </div>
+                            <div class="resource-bar">
+                                <span class="material-symbols-outlined resource-icon">paid</span>
+                                <div class="gold-display" data-container="player-gold">Gold: 0</div>
+                            </div>
+                        </div>
+                         <p class="turn-counter">Round: <span data-container="turn-counter">0</span></p>
+                    </div>
+                     <div class="header-controls">
+                        <p class="build-number-font">v4.2.1 The Journey of Lore</p>
+                        <div id="dm-controls" class="dm-controls hidden">
+                             <button id="dm-play-monster-btn" class="btn btn-sm btn-secondary">Play Monster</button>
+                        </div>
+                        <div class="header-menu">
+                            <button id="menu-toggle-btn" class="btn btn-sm btn-icon"><span class="material-symbols-outlined">menu</span></button>
+                            <div id="menu-dropdown" class="menu-dropdown hidden">
+                                <div class="room-code-display menu">
+                                    <span>Room Code</span>
+                                    <p data-container="room-code">----</p>
+                                </div>
+                                <button id="chat-toggle-btn" class="menu-item"><span class="material-symbols-outlined">chat</span>Chat & Log</button>
+                                <button id="help-btn" class="menu-item"><span class="material-symbols-outlined">help</span>Game Guide</button>
+                                <button id="settings-btn" class="menu-item"><span class="material-symbols-outlined">settings</span>Settings</button>
+                                <button id="join-voice-btn" class="menu-item"><span class="material-symbols-outlined">mic</span>Join Voice</button>
+                                <button id="mute-voice-btn" class="menu-item hidden"><span class="material-symbols-outlined">mic_off</span>Mute</button>
+                                <button id="leave-voice-btn" class="menu-item hidden"><span class="material-symbols-outlined">voice_over_off</span>Leave Voice</button>
+                                <button id="save-and-leave-btn" class="menu-item"><span class="material-symbols-outlined">save</span>Save & Leave</button>
+                                <button id="leave-game-btn" class="menu-item danger"><span class="material-symbols-outlined">logout</span>Leave Game</button>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+    
+                <aside id="players-list-container" class="players-panel panel">
+                    <div id="player-list-display">
+                        <div id="player-list-header" class="panel-header collapsible-header">
+                            <h2 class="panel-subheader">Players</h2>
+                            <span class="material-symbols-outlined collapse-icon">expand_less</span>
+                        </div>
+                        <div class="lobby-settings-display hidden" data-container="game-lobby-settings"></div>
+                        <ul class="player-list" data-container="player-list"></ul>
+                        <div class="lobby-controls hidden" data-container="lobby-controls">
+                           <button class="btn btn-primary" data-container="start-game-btn" disabled>Start Game</button>
+                        </div>
+                    </div>
+                    <div id="character-sheet-block">
+                        <!-- Content for class selection or player stats will be rendered here -->
+                    </div>
+                </aside>
+                
+                <div id="main-game-area-wrapper">
+                    <div class="world-event-banner hidden" data-container="world-event-display"></div>
+                    
+                    <!-- COMBAT GRID (Phase 2) -->
+                    <div id="combat-grid-container" class="combat-grid-panel panel hidden">
+                        <div class="panel-header-with-controls collapsible-header" id="grid-header">
+                            <h2 class="panel-header">Combat Grid</h2>
+                            <div class="grid-controls">
+                                <span class="grid-stat" data-container="movement-points">Movement: <strong>0</strong></span>
+                                <span class="material-symbols-outlined collapse-icon">expand_less</span>
+                            </div>
+                        </div>
+                        <div id="combat-grid" class="combat-grid"></div>
+                        <div class="grid-legend">
+                            <span><span class="legend-box player-pos"></span> Players</span>
+                            <span><span class="legend-box monster-pos"></span> Monsters</span>
+                            <span><span class="legend-box valid-move"></span> Can Move</span>
+                            <span><span class="legend-box flanking"></span> Flanking</span>
+                        </div>
+                    </div>
+                    
+                    <main id="game-board-container" class="board-panel panel">
+                        <h2 class="panel-header">Game Board</h2>
+                        <div class="card-container-row" data-container="board-cards"></div>
+                    </main>
+                    <footer id="hand-equipment-container" class="hand-panel panel">
+                        <div class="player-hand-header">
+                           <h2 class="panel-header">Your Hand & Equipment</h2>
+                        </div>
+                       <div class="hand-and-equipped-container">
+                           <div class="equipped-items-container">
+                               <h3 class="sub-header-font">Equipped</h3>
+                               <div class="card-container-row" data-container="equipped-items"></div>
+                           </div>
+                           <div class="player-hand-container card-container-row" data-container="player-hand"></div>
+                       </div>
+                   </footer>
+                </div>
+
+                <div class="desktop-action-bar hidden" data-container="action-bar">
+                    <button class="btn btn-special hidden" data-container="action-skill-challenge-btn">Challenge (1 AP)</button>
+                    <button class="btn btn-secondary" data-container="action-guard-btn">Guard (1AP)</button>
+                    <button class="btn btn-secondary" data-container="action-dodge-btn">Dodge (1AP)</button>
+                    <button class="btn btn-secondary" data-container="action-dash-btn">Dash (1AP)</button>
+                    <button class="btn btn-secondary" data-container="action-help-btn">Help (1AP)</button>
+                    <button class="btn btn-secondary" data-container="action-search-btn">Search (1AP)</button>
+                    <button class="btn btn-secondary" data-container="action-take-cover-btn">Take Cover (1AP)</button>
+                    <button class="btn btn-secondary" data-container="action-advance-btn">Advance (1AP)</button>
+                    <button class="btn btn-secondary" data-container="action-retreat-btn">Retreat (1AP)</button>
+                    <button class="btn btn-secondary" data-container="action-brief-respite-btn">Respite (1AP)</button>
+                    <button class="btn btn-secondary" data-container="action-full-rest-btn">Rest (2AP)</button>
+                    <button class="btn btn-primary" data-container="action-end-turn-btn">End Turn</button>
+                </div>
+
+                <aside class="info-tabs-panel panel">
+                    <div class="tab-buttons">
+                        <button class="tab-btn active" data-tab="game-log-tab">Game Log</button>
+                        <button class="tab-btn" data-tab="party-loot-tab">Party Discoveries</button>
+                    </div>
+                    <div id="game-log-tab" class="tab-content active">
+                        <div class="log-content-area" data-container="game-log"></div>
+                    </div>
+                    <div id="party-loot-tab" class="tab-content">
+                        <div class="card-container-row" data-container="party-loot"></div>
+                    </div>
+                </aside>
+    
+                <div id="chat-preview-container"></div>
+            </div>
+    
+            <!-- ================= MOBILE LAYOUT ================= -->
+            <div class="game-area-mobile">
+                <div class="mobile-sticky-header-container">
+                    <header class="mobile-header">
+                        <div class="mobile-header-left">
+                            <div class="mobile-turn-info">
+                                <p class="turn-indicator-font" data-container="turn-indicator">Waiting...</p>
+                                <p class="turn-counter mobile">Round: <span data-container="turn-counter">0</span></p>
+                            </div>
+                        </div>
+
+                        <div class="mobile-header-center hidden" data-container="player-resources">
+                            <div class="resource-bar hp-bar">
+                                <span class="material-symbols-outlined resource-icon hp">favorite</span>
+                                <div class="progress-bar-wrapper">
+                                    <div class="progress-bar health">
+                                        <div class="progress-bar-fill" data-container="player-health-bar"></div>
+                                    </div>
+                                    <span class="progress-bar-text" data-container="player-health-text"></span>
+                                </div>
+                            </div>
+                            <div class="resource-bar ap-bar">
+                                <span class="material-symbols-outlined resource-icon ap">bolt</span>
+                                <div class="progress-bar-wrapper">
+                                    <div class="progress-bar ap">
+                                        <div class="progress-bar-fill" data-container="player-ap-bar"></div>
+                                    </div>
+                                    <span class="progress-bar-text" data-container="player-ap-text"></span>
+                                </div>
+                            </div>
+                            <div class="resource-bar gold-bar">
+                                <span class="material-symbols-outlined resource-icon">paid</span>
+                                <div class="gold-display" data-container="player-gold-mobile">Gold: 0</div>
+                            </div>
+                        </div>
+
+                        <div class="mobile-header-right">
+                            <div class="header-menu">
+                                <button id="mobile-menu-toggle-btn" class="btn btn-sm btn-icon"><span class="material-symbols-outlined">more_vert</span></button>
+                                <div id="mobile-menu-dropdown" class="menu-dropdown hidden">
+                                    <div class="room-code-display menu">
+                                        <span>Room Code</span>
+                                        <p data-container="room-code">----</p>
+                                    </div>
+                                    <button id="mobile-help-btn" class="menu-item"><span class="material-symbols-outlined">help</span>Guide</button>
+                                    <button id="mobile-settings-btn" class="menu-item"><span class="material-symbols-outlined">settings</span>Settings</button>
+                                    <button id="mobile-join-voice-btn" class="menu-item"><span class="material-symbols-outlined">mic</span>Voice</button>
+                                    <button id="mobile-mute-voice-btn" class="menu-item hidden"><span class="material-symbols-outlined">mic_off</span>Mute</button>
+                                    <button id="mobile-leave-voice-btn" class="menu-item hidden"><span class="material-symbols-outlined">voice_over_off</span>Leave</button>
+                                    <button id="mobile-save-and-leave-btn" class="menu-item"><span class="material-symbols-outlined">save</span>Save & Leave</button>
+                                    <button id="mobile-leave-game-btn" class="menu-item danger"><span class="material-symbols-outlined">logout</span>Leave Game</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="mobile-drawer-handle" class="mobile-drawer-handle">
+                            <span class="material-symbols-outlined">expand_more</span>
+                        </div>
+                    </header>
+                    
+                    <div id="mobile-top-drawer">
+                        <div id="party-hope-meter-mobile" class="resource-bar hope-bar mobile hidden" data-container="party-hope-meter">
+                            <span class="material-symbols-outlined resource-icon">stars</span>
+                            <div class="progress-bar-wrapper">
+                                <div class="progress-bar hope">
+                                    <div class="progress-bar-fill" data-container="party-hope-bar"></div>
+                                </div>
+                                <span class="progress-bar-text" data-container="party-hope-text"></span>
+                            </div>
+                        </div>
+                        <div class="resource-bar xp-bar hidden" data-container="player-resources">
+                            <span class="material-symbols-outlined resource-icon xp">workspace_premium</span>
+                            <div class="progress-bar-wrapper">
+                                <div class="progress-bar xp">
+                                    <div class="progress-bar-fill" data-container="player-xp-bar"></div>
+                                </div>
+                                <span class="progress-bar-text" data-container="player-xp-text"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <main class="mobile-main">
+                    <div class="world-event-banner hidden" data-container="world-event-display"></div>
+                    <div class="mobile-screen-container">
+                        <!-- Mobile Screen 1: Game (Board, Equipment, Hand, Actions) -->
+                        <div id="mobile-screen-game" class="mobile-screen active">
+                            <!-- Combat Grid Button (shows during combat) -->
+                            <button id="mobile-grid-btn" class="btn btn-special btn-wide hidden" style="margin: 0.5rem;">
+                                <span class="material-symbols-outlined">grid_on</span>
+                                View Combat Grid
+                            </button>
+                            
+                            <div class="panel mobile-panel">
+                                <h2 class="panel-header">Game Board</h2>
+                                <div class="card-container-row" data-container="board-cards"></div>
+                            </div>
+                            <div class="panel mobile-panel">
+                                 <h2 class="panel-header">Your Equipment</h2>
+                                 <div class="card-container-row" data-container="equipped-items"></div>
+                            </div>
+                            <div class="panel mobile-panel">
+                                <div class="player-hand-header">
+                                     <h2 class="panel-header">Your Hand</h2>
+                                </div>
+                                <div class="player-hand-container card-container-row" data-container="player-hand"></div>
+                            </div>
+                        </div>
+        
+                        <!-- Mobile Screen 2: Character (Stats, Class Selection) -->
+                        <div id="mobile-screen-character" class="mobile-screen">
+                            <!-- Content rendered by JS (includes avatar now) -->
+                        </div>
+        
+                        <!-- Mobile Screen 3: Party (Player List) -->
+                        <div id="mobile-screen-party" class="mobile-screen">
+                             <div class="panel mobile-panel">
+                                <h2 class="panel-header">Players</h2>
+                                <div class="lobby-settings-display hidden" data-container="game-lobby-settings"></div>
+                                <ul class="player-list" data-container="player-list"></ul>
+                                 <div class="lobby-controls hidden" data-container="lobby-controls">
+                                   <button class="btn btn-primary" data-container="start-game-btn" disabled>Start Game</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Mobile Screen 4: Info (World Events, Discoveries) -->
+                         <div id="mobile-screen-info" class="mobile-screen">
+                             <div class="panel mobile-panel">
+                                <h2 class="panel-header">World Events</h2>
+                                <div class="world-events-container" data-container="world-events">
+                                    <p class="info-placeholder">World events will appear here as the adventure unfolds...</p>
+                                </div>
+                            </div>
+                            <div class="panel mobile-panel">
+                                <h2 class="panel-header">Party Discoveries</h2>
+                                <div class="card-container-row" data-container="party-loot"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Mobile Screen 5: Log -->
+                        <div id="mobile-screen-log" class="mobile-screen">
+                            <div class="panel mobile-panel">
+                                <div class="chat-header">
+                                    <h2 class="panel-header">Chat & Log</h2>
+                                </div>
+                                <div class="chat-log" data-container="game-log"></div>
+                                <form id="mobile-chat-form" class="chat-form">
+                                    <select id="mobile-chat-channel" class="select-field">
+                                        <option value="game">Game</option>
+                                        <option value="party">Party</option>
+                                    </select>
+                                    <input type="text" id="mobile-chat-input" class="input-field" placeholder="Type..." autocomplete="off">
+                                    <button type="submit" class="btn btn-sm btn-primary">Send</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+    
+                <div id="mobile-bottom-chrome">
+                    <!-- Mobile Action Bar (Horizontal Scroll) -->
+                    <div class="mobile-action-bar hidden" data-container="action-bar">
+                        <button class="btn btn-special btn-sm hidden" data-container="action-skill-challenge-btn">Challenge (1 AP)</button>
+                        <button class="btn btn-secondary btn-sm" data-container="action-guard-btn">Guard (1AP)</button>
+                        <button class="btn btn-secondary btn-sm" data-container="action-dodge-btn">Dodge (1AP)</button>
+                        <button class="btn btn-secondary btn-sm" data-container="action-dash-btn">Dash (1AP)</button>
+                        <button class="btn btn-secondary btn-sm" data-container="action-help-btn">Help (1AP)</button>
+                        <button class="btn btn-secondary btn-sm" data-container="action-search-btn">Search (1AP)</button>
+                        <button class="btn btn-secondary btn-sm" data-container="action-take-cover-btn">Cover (1AP)</button>
+                        <button class="btn btn-secondary btn-sm" data-container="action-advance-btn">Advance (1AP)</button>
+                        <button class="btn btn-secondary btn-sm" data-container="action-retreat-btn">Retreat (1AP)</button>
+                        <button class="btn btn-secondary btn-sm" data-container="action-brief-respite-btn">Respite (1AP)</button>
+                        <button class="btn btn-secondary btn-sm" data-container="action-full-rest-btn">Rest (2AP)</button>
+                        <button class="btn btn-primary btn-sm" data-container="action-end-turn-btn">End Turn</button>
+                    </div>
+                    
+                    <nav class="mobile-bottom-nav">
+                        <button class="nav-btn active" data-screen="game"><span class="material-symbols-outlined">swords</span>Game</button>
+                        <button class="nav-btn" data-screen="character"><span class="material-symbols-outlined">person</span>Character</button>
+                        <button class="nav-btn" data-screen="party"><span class="material-symbols-outlined">groups</span>Party</button>
+                        <button class="nav-btn" data-screen="info"><span class="material-symbols-outlined">info</span>Info</button>
+                        <button class="nav-btn" data-screen="log"><span class="material-symbols-outlined">chat</span>Log</button>
+                    </nav>
+                </div>
+            </div>
+    
+        </div>
+        
+        <!-- Shared Overlays/Modals -->
+        <div id="chat-overlay" class="chat-overlay hidden">
+            <div class="chat-header">
+                <h2 class="panel-header">Chat & Log</h2>
+                <button id="chat-close-btn" class="chat-close-btn">&times;</button>
+            </div>
+            <div id="chat-log" class="chat-log"></div>
+            <form id="chat-form" class="chat-form">
+                <select id="chat-channel" class="select-field">
+                    <option value="game">Game</option>
+                    <option value="party">Party</option>
+                </select>
+                <input type="text" id="chat-input" class="input-field" placeholder="Type..." autocomplete="off">
+                <button type="submit" class="btn btn-sm btn-primary">Send</button>
+            </form>
+        </div>
+    
+        <div id="narrative-modal" class="modal-overlay hidden">
+            <div class="modal-content">
+                <h2 class="panel-header">Describe Your Action</h2>
+                <p id="narrative-prompt">How do you use [Card Name]?</p>
+                <textarea id="narrative-input" class="input-field" rows="3" placeholder="e.g., I chant the arcane words... (Optional)"></textarea>
+                <div class="modal-actions">
+                    <button id="narrative-cancel-btn" class="btn btn-secondary">Cancel</button>
+                    <button id="narrative-confirm-btn" class="btn btn-primary">Confirm</button>
+                </div>
+            </div>
+        </div>
+    
+        <div id="your-turn-popup" class="your-turn-popup hidden">YOUR TURN</div>
+        
+        <!-- Dice Roll Modal -->
+        <div id="dice-roll-modal" class="modal-overlay hidden">
+            <div class="modal-content dice-roll-content">
+                <h2 id="dice-roll-title" class="panel-header">Roll for Action</h2>
+                <p id="dice-roll-description" class="roll-description"></p>
+                <div id="dice-display-container">
+                    <!-- SVG for dice will be inserted here by client.js -->
+                </div>
+                <div id="dice-roll-result-container" class="hidden">
+                    <p id="dice-roll-result-line" class="result-line"></p>
+                    <p id="dice-roll-details" class="roll-details"></p>
+                </div>
+                <div class="modal-actions">
+                    <button id="dice-roll-confirm-btn" class="btn btn-primary">Roll Dice</button>
+                    <button id="dice-roll-close-btn" class="btn btn-secondary hidden">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Over Modal -->
+        <div id="game-over-modal" class="modal-overlay hidden">
+            <div class="modal-content">
+                <h2 id="game-over-title" class="panel-header">Game Over</h2>
+                <p id="game-over-message" style="text-align: center; font-size: 1.2rem; margin-top: 1rem;"></p>
+                <div id="game-over-score" class="game-over-score">
+                    <div class="score-line">XP From Run: <span id="game-over-run-xp">0</span></div>
+                    <div class="score-line">End of Run Bonus: <span id="game-over-bonus-xp">0</span></div>
+                    <div class="score-total">Total Account XP Earned: <span id="game-over-total-xp">0</span></div>
+                </div>
+                <div class="modal-actions">
+                    <button id="game-over-leave-btn" class="btn btn-primary">Return to Menu</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Choose to Discard Modal -->
+        <div id="choose-discard-modal" class="modal-overlay hidden">
+            <div class="modal-content large">
+                <div class="modal-header-fixed">
+                    <h2 class="panel-header">Hand is Full!</h2>
+                    <p>Your hand is full. Choose a card to discard to make room for the new card.</p>
+                </div>
+                <div class="modal-scroll-container">
+                    <div class="discard-choice-container">
+                        <div class="discard-choice-section">
+                            <h3>New Card</h3>
+                            <div id="new-card-to-discard-container" class="card-container-row"></div>
+                        </div>
+                        <div class="discard-choice-section">
+                            <h3>Your Hand</h3>
+                            <div id="hand-cards-to-discard-container" class="card-container-row"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-actions modal-footer-fixed">
+                    <button id="confirm-discard-btn" class="btn btn-primary" disabled>Confirm Discard</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Individual Discovery Modal -->
+        <div id="discovery-modal" class="modal-overlay hidden">
+            <div class="modal-content large">
+                <div class="modal-header-fixed">
+                    <h2 class="panel-header">A Fateful Choice</h2>
+                    <p>You have made a new discovery, but can only carry one. Select the item you wish to keep.</p>
+                </div>
+                <div class="modal-scroll-container">
+                    <div class="discovery-choice-container">
+                        <div class="discovery-choice-section">
+                            <h3>Equipped Item</h3>
+                            <div id="discovery-equipped-container" class="card-container-row">
+                                <!-- Populated by JS -->
+                            </div>
+                        </div>
+                        <div class="discovery-choice-section">
+                            <h3>Discovered Item</h3>
+                            <div id="discovery-new-item-container" class="card-container-row">
+                                <!-- Populated by JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-actions modal-footer-fixed">
+                    <button id="discovery-confirm-btn" class="btn btn-primary" disabled>Confirm Choice</button>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Target Selection Modal (Used for Loot/Abilities) -->
+        <div id="target-selection-modal" class="modal-overlay hidden">
+            <div class="modal-content">
+                 <div class="modal-header-fixed">
+                    <h2 id="target-selection-title" class="panel-header">Select a Target</h2>
+                    <p id="target-selection-prompt">Please choose a target from the list below.</p>
+                </div>
+                <div class="modal-scroll-container">
+                    <div id="target-selection-list" class="button-grid">
+                        <!-- Player buttons will be rendered here by client.js -->
+                    </div>
+                </div>
+                <div class="modal-actions modal-footer-fixed">
+                    <button id="target-selection-cancel-btn" class="btn btn-secondary">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Skill Challenge Modal -->
+        <div id="skill-challenge-modal" class="modal-overlay hidden">
+            <div class="modal-content">
+                <h2 id="skill-challenge-title" class="panel-header">A New Challenge!</h2>
+                <p id="skill-challenge-description">Details of the challenge...</p>
+                <div class="modal-actions">
+                     <button id="skill-challenge-decline-btn" class="btn btn-secondary">Maybe Later</button>
+                     <button id="skill-challenge-resolve-btn" class="btn btn-primary">Attempt</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card Inspector Modal -->
+        <div id="card-inspector-modal" class="modal-overlay hidden">
+            <div id="card-inspector-content" class="card-inspector-content">
+                 <button class="btn-icon modal-close-btn" aria-label="Close Inspector"><span class="material-symbols-outlined">close</span></button>
+                 <div id="card-inspector-view-container">
+                    <!-- Detailed card view will be rendered here by JS -->
+                 </div>
+            </div>
+        </div>
+        
+        <!-- Player Inspector Modal -->
+        <div id="player-inspector-modal" class="modal-overlay hidden">
+            <div class="modal-content large scrollable">
+                <div class="modal-header-fixed">
+                    <h2 id="player-inspector-title" class="panel-header">Player Details</h2>
+                    <button class="btn-icon modal-close-btn" aria-label="Close Inspector"><span class="material-symbols-outlined">close</span></button>
+                </div>
+                <div id="player-inspector-content" class="modal-scroll-container scrollable-content">
+                    <!-- Player sheet will be rendered here by JS -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Player Avatar Display Modal -->
+        <div id="player-avatar-modal" class="modal-overlay hidden">
+            <div class="modal-content avatar-modal">
+                <button class="btn-icon modal-close-btn" aria-label="Close Avatar"><span class="material-symbols-outlined">close</span></button>
+                <div id="player-avatar-display" class="avatar-display-container">
+                    <div class="avatar-frame">
+                        <div id="avatar-sprite" class="avatar-sprite">
+                            <!-- Animated sprite will be rendered here -->
+                        </div>
+                    </div>
+                    <div class="avatar-info">
+                        <h2 id="avatar-player-name">Player Name</h2>
+                        <p id="avatar-class-name" class="avatar-class">Class</p>
+                        <div id="avatar-stats" class="avatar-stats-display">
+                            <!-- Stats will be rendered here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Class Selection Modal (Desktop Only) -->
+        <div id="class-selection-modal" class="modal-backdrop hidden">
+            <div class="modal-content">
+                <h2 class="panel-header">Choose Your Destiny</h2>
+                <p>Please select a class to begin your Quest & Chronicle.</p>
+                <div id="desktop-class-card-display">
+                    <!-- Class cards will be rendered here by client.js -->
+                </div>
+                <div class="modal-actions">
+                    <button id="confirm-class-selection-btn" class="btn btn-primary" disabled>Confirm Class</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Level Up Modal -->
+        <div id="level-up-modal" class="modal-overlay hidden">
+            <div class="modal-content level-up-content">
+                <div class="level-up-header">
+                    <span class="level-up-icon">✨</span>
+                    <h2 id="level-up-title" class="panel-header">Level Up!</h2>
+                    <span class="level-up-icon">✨</span>
+                </div>
+                <p id="level-up-description">You have grown stronger! Choose a stat to permanently increase for this run.</p>
+                <div id="level-up-stat-choices" class="level-up-stats-grid">
+                    <!-- Stat choices will be rendered here by client.js -->
+                </div>
+                <div class="modal-actions">
+                    <button id="level-up-confirm-btn" class="btn btn-special" disabled>Confirm Upgrade</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stat Detail Modal -->
+        <div id="stat-detail-modal" class="modal-overlay hidden">
+            <div class="modal-content">
+                <h2 id="stat-detail-title" class="panel-header">Stat Details</h2>
+                <p id="stat-detail-description" class="stat-detail-description"></p>
+                <h3>Effects:</h3>
+                <ul id="stat-detail-effects" class="stat-detail-effects">
+                    <!-- Stat effects will be rendered here -->
+                </ul>
+                <div class="modal-actions">
+                    <button class="btn btn-primary" onclick="get('stat-detail-modal').classList.add('hidden')">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Specialization Selection Modal (Phase 2) -->
+        <div id="specialization-modal" class="modal-overlay hidden">
+            <div class="modal-content specialization-content">
+                <div class="specialization-header">
+                    <span class="specialization-icon material-symbols-outlined">auto_awesome</span>
+                    <h2 class="panel-header">Choose Your Specialization</h2>
+                    <span class="specialization-icon material-symbols-outlined">auto_awesome</span>
+                </div>
+                <p id="specialization-description">Select a specialized path to unlock unique abilities and bonuses!</p>
+                <div id="specialization-trees-container" class="specialization-trees">
+                    <!-- Specialization options will be rendered here -->
+                </div>
+                <div class="modal-actions">
+                    <button id="specialization-confirm-btn" class="btn btn-special" disabled>Confirm Specialization</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dynamic Event Modal (Phase 2) -->
+        <div id="event-modal" class="modal-overlay hidden">
+            <div class="modal-content event-content">
+                <div class="event-header">
+                    <span id="event-icon" class="event-icon material-symbols-outlined">warning</span>
+                    <h2 id="event-title" class="panel-header">Dungeon Event</h2>
+                </div>
+                <p id="event-description" class="event-description">Something happens in the dungeon...</p>
+                <div id="event-choices-container" class="event-choices">
+                    <!-- Event choices will be rendered here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Modal (Phase 4 / QoL) -->
+        <div id="settings-modal" class="modal-overlay hidden">
+            <div class="modal-content settings-content">
+                <button class="modal-close-btn">×</button>
+                <h2><span class="material-symbols-outlined">settings</span> Game Settings</h2>
+                <div class="settings-options">
+                    <div class="setting-item">
+                        <label class="setting-label">
+                            <input type="checkbox" id="telemetry-opt-in">
+                            <span class="setting-name">Share anonymous gameplay metrics</span>
+                        </label>
+                        <span class="setting-desc">Helps improve balance and UX. No PII. Optional.</span>
+                    </div>
+                    <div class="setting-item">
+                        <label class="setting-label">
+                            <input type="checkbox" id="damage-numbers" checked>
+                            <span class="setting-name">Show Damage Numbers</span>
+                        </label>
+                        <span class="setting-desc">Display floating damage/healing numbers</span>
+                    </div>
+                    <div class="setting-item">
+                        <label class="setting-label">
+                            <input type="checkbox" id="screen-shake" checked>
+                            <span class="setting-name">Screen Shake</span>
+                        </label>
+                        <span class="setting-desc">Camera shake on critical hits</span>
+                    </div>
+                    <div class="setting-item">
+                        <label class="setting-label">
+                            <span class="setting-name">Animation Speed</span>
+                            <input type="range" id="animation-speed" min="0.5" max="2" step="0.5" value="1" class="setting-slider">
+                            <span class="setting-value" id="animation-speed-value">1x</span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label class="setting-label">
+                            <input type="checkbox" id="synergy-tracker-toggle" checked>
+                            <span class="setting-name">Show Synergy Tracker</span>
+                        </label>
+                        <span class="setting-desc">Display active combo tracker widget</span>
+                    </div>
+                    <div class="setting-item">
+                        <label class="setting-label">
+                            <input type="checkbox" id="pixel-art-mode" checked>
+                            <span class="setting-name">Pixel Art Mode</span>
+                        </label>
+                        <span class="setting-desc">Use pixel sprites (requires assets)</span>
+                    </div>
+                </div>
+                
+                <!-- Developer Tools Section -->
+                <div id="dev-tools-section" class="dev-tools-section hidden">
+                    <h3><span class="material-symbols-outlined">build</span> Developer Tools</h3>
+                    <div class="dev-tools-grid">
+                        <div class="dev-tool-item">
+                            <label class="dev-label">XP Gain</label>
+                            <input type="number" id="dev-xp-amount" value="100" min="1" max="10000" class="dev-input">
+                            <button id="dev-gain-xp" class="btn btn-secondary btn-small">Add XP</button>
+                        </div>
+                        <div class="dev-tool-item">
+                            <label class="dev-label">Level Up</label>
+                            <button id="dev-level-up" class="btn btn-secondary btn-small">Level Up Now</button>
+                        </div>
+                        <div class="dev-tool-item">
+                            <label class="dev-label">Test Specialization</label>
+                            <button id="dev-test-spec" class="btn btn-secondary btn-small">Trigger Spec Choice</button>
+                        </div>
+                        <div class="dev-tool-item">
+                            <label class="dev-label">Add Gold</label>
+                            <input type="number" id="dev-gold-amount" value="100" min="1" max="10000" class="dev-input">
+                            <button id="dev-add-gold" class="btn btn-secondary btn-small">Add Gold</button>
+                        </div>
+                        <div class="dev-tool-item">
+                            <label class="dev-label">Spawn Monster</label>
+                            <button id="dev-spawn-monster" class="btn btn-secondary btn-small">Spawn Monster</button>
+                        </div>
+                        <div class="dev-tool-item">
+                            <label class="dev-label">Heal Player</label>
+                            <button id="dev-heal-player" class="btn btn-secondary btn-small">Full Heal</button>
+                        </div>
+                        <div class="dev-tool-item">
+                            <label class="dev-label">Cheat Code</label>
+                            <input type="text" id="dev-cheat-code" placeholder="Enter cheat code..." class="dev-input">
+                            <button id="dev-execute-cheat" class="btn btn-secondary btn-small">Execute</button>
+                        </div>
+                    </div>
+                    <div class="dev-cheat-codes">
+                        <h4>Available Cheat Codes:</h4>
+                        <ul>
+                            <li><code>levelup</code> - Level up immediately</li>
+                            <li><code>maxlevel</code> - Set to level 10</li>
+                            <li><code>gold1000</code> - Add 1000 gold</li>
+                            <li><code>heal</code> - Full heal</li>
+                            <li><code>monster</code> - Spawn monster</li>
+                            <li><code>specialization</code> - Trigger specialization choice</li>
+                            <li><code>godmode</code> - Toggle invincibility</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="modal-actions">
+                    <button id="dev-tools-toggle" class="btn btn-secondary">Show Dev Tools</button>
+                    <button id="settings-close-btn" class="btn btn-primary">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Synergy Notifications (Phase 3) -->
+        <div id="synergy-container" class="synergy-container">
+            <!-- Synergy notifications will appear here -->
+        </div>
+
+        <!-- Synergy Tracker Panel -->
+        <div id="synergy-tracker" class="synergy-tracker hidden">
+            <div class="synergy-tracker-header">
+                <h3>Active Combos</h3>
+                <button id="synergy-tracker-toggle" class="btn-icon"><span class="material-symbols-outlined">expand_more</span></button>
+            </div>
+            <div id="synergy-tracker-content" class="synergy-tracker-content">
+                <!-- Active synergies will be listed here -->
+            </div>
+        </div>
+
+        <!-- Help Modal -->
+        <div id="help-modal" class="modal-overlay hidden">
+            <div class="modal-content help-modal-content">
+                <div class="help-header">
+                    <h2 class="panel-header">Game Guide</h2>
+                    <button id="help-close-btn" class="btn-icon modal-close-btn" aria-label="Close Guide"><span class="material-symbols-outlined">close</span></button>
+                </div>
+                <div id="help-content" class="help-content">
+                    <!-- Pages will be rendered here -->
+                </div>
+                <div class="help-navigation">
+                    <button id="help-prev-btn" class="btn btn-secondary">Previous</button>
+                    <span id="help-page-indicator">Page 1 / 7</span>
+                    <button id="help-next-btn" class="btn btn-secondary">Next</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Game Paused Modal -->
+        <div id="game-paused-modal" class="modal-overlay hidden">
+            <div class="modal-content">
+                <h2 class="panel-header">Game Paused</h2>
+                <p id="game-paused-reason" style="text-align: center; font-size: 1.2rem; margin-top: 1rem;"></p>
+            </div>
+        </div>
+    
+        <!-- Confirmation Modal -->
+        <div id="confirmation-modal" class="modal-overlay hidden">
+            <div class="modal-content">
+                <h2 id="confirmation-title" class="panel-header">Are you sure?</h2>
+                <p id="confirmation-prompt"></p>
+                <div class="modal-actions">
+                    <button id="confirmation-cancel-btn" class="btn btn-secondary">Cancel</button>
+                    <button id="confirmation-confirm-btn" class="btn btn-primary">Confirm</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    <div id="toast-container"></div>
+    <div id="spectator-roll-toast-container"></div>
+    <div id="animation-overlay"></div>
+    <div id="voice-chat-audio-container"></div>
+
+    <!-- Onboarding (first-time) -->
+    <div id="onboarding-overlay" class="modal-overlay hidden">
+        <div class="modal-content compact">
+            <h2 class="panel-header">Welcome to Quest & Chronicle</h2>
+            <p>Quick tips:
+                <br>1) Pick a class to start.
+                <br>2) Select a weapon, then click a monster.
+                <br>3) End turn when out of AP.
+            </p>
+            <label style="display:flex; gap:8px; align-items:center; margin-top:8px;">
+                <input type="checkbox" id="onboarding-dont-show"> Don't show again
+            </label>
+            <div class="modal-actions" style="margin-top:12px;">
+                <button id="onboarding-close-btn" class="btn btn-primary">Got it</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- End Turn Prompt Modal -->
+    <div id="end-turn-prompt" class="modal-overlay hidden">
+        <div class="modal-content small">
+            <h2 class="panel-header">No AP Remaining</h2>
+            <p class="panel-content">You've run out of AP. End your turn?</p>
+            <div class="modal-actions">
+                <button id="end-turn-cancel-btn" class="btn btn-secondary">Not yet</button>
+                <button id="end-turn-confirm-btn" class="btn btn-primary">End Turn</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Choose Path Modal (replaces floating panel preview) -->
+    <div id="choose-path-modal" class="modal-overlay hidden">
+        <div class="modal-content event-content compact">
+            <h2 class="panel-header">Choose Your Path</h2>
+            <div id="choose-path-choices" class="event-choices"></div>
+        </div>
+    </div>
+
+    <!-- Loadout Modal -->
+    <div id="loadout-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2 class="panel-header">Saved Loadouts</h2>
+            <div id="loadout-list"></div>
+            <div class="modal-actions">
+                <button id="loadout-close-btn" class="btn btn-secondary">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Shop Modal -->
+    <div id="shop-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2 class="panel-header">Merchant</h2>
+            <div id="shop-status-text" class="shop-status hidden"></div>
+            <div id="shop-inventory"></div>
+            <div class="modal-actions">
+                <button id="shop-close-btn" class="btn btn-secondary">Close</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Multiplayer scripts - Socket.IO required -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/sound-manager.js"></script>
+    <script src="/offline-game-engine.js"></script>
+    <script src="/offline-actions.js"></script>
+    <script src="/companion-system.js"></script>
+    <!-- Save Slot Selection Modal -->
+    <div id="save-slot-modal" class="modal-overlay hidden">
+        <div class="modal-content save-slot-modal">
+            <div class="modal-header-fixed">
+                <h2 class="panel-header">Save Game</h2>
+                <button class="btn-icon modal-close-btn" id="save-slot-close-btn" aria-label="Close">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-description">Choose a slot to save your game. Saving will overwrite any existing save in that slot.</p>
+                <div class="save-slots-container">
+                    <div class="save-slot-card" data-slot="1">
+                        <div class="slot-number">Slot 1</div>
+                        <div class="slot-preview">
+                            <div class="slot-empty">Empty Slot</div>
+                            <div class="slot-info hidden">
+                                <div class="slot-character-name"></div>
+                                <div class="slot-details"></div>
+                                <div class="slot-timestamp"></div>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary save-to-slot-btn" data-slot="1">Save Here</button>
+                    </div>
+                    <div class="save-slot-card" data-slot="2">
+                        <div class="slot-number">Slot 2</div>
+                        <div class="slot-preview">
+                            <div class="slot-empty">Empty Slot</div>
+                            <div class="slot-info hidden">
+                                <div class="slot-character-name"></div>
+                                <div class="slot-details"></div>
+                                <div class="slot-timestamp"></div>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary save-to-slot-btn" data-slot="2">Save Here</button>
+                    </div>
+                    <div class="save-slot-card" data-slot="3">
+                        <div class="slot-number">Slot 3</div>
+                        <div class="slot-preview">
+                            <div class="slot-empty">Empty Slot</div>
+                            <div class="slot-info hidden">
+                                <div class="slot-character-name"></div>
+                                <div class="slot-details"></div>
+                                <div class="slot-timestamp"></div>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary save-to-slot-btn" data-slot="3">Save Here</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Combat Grid Modal (Mobile) -->
+    <div id="combat-grid-modal" class="modal-overlay hidden">
+        <div class="modal-content combat-grid-modal-content">
+            <div class="modal-header-fixed">
+                <h2 class="panel-header">Combat Grid</h2>
+                <button class="btn-icon modal-close-btn" id="combat-grid-close-btn" aria-label="Close">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="grid-controls-mobile">
+                    <span class="grid-stat" data-container="movement-points-mobile">Movement: <strong>0</strong></span>
+                </div>
+                <div id="combat-grid-mobile"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load Slot Selection Modal -->
+    <div id="load-slot-modal" class="modal-overlay hidden">
+        <div class="modal-content load-slot-modal">
+            <div class="modal-header-fixed">
+                <h2 class="panel-header">Load Game</h2>
+                <button class="btn-icon modal-close-btn" id="load-slot-close-btn" aria-label="Close">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-description">Select a saved game to continue your adventure.</p>
+                <div class="load-slots-container">
+                    <div class="load-slot-card" data-slot="1">
+                        <div class="slot-number">Slot 1</div>
+                        <div class="slot-preview">
+                            <div class="slot-empty">Empty Slot</div>
+                            <div class="slot-info hidden">
+                                <div class="slot-character-name"></div>
+                                <div class="slot-details"></div>
+                                <div class="slot-timestamp"></div>
+                            </div>
+                        </div>
+                        <div class="slot-actions">
+                            <button class="btn btn-primary load-from-slot-btn" data-slot="1" disabled>Load Game</button>
+                            <button class="btn btn-danger btn-sm delete-slot-btn" data-slot="1" disabled>
+                                <span class="material-symbols-outlined">delete</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="load-slot-card" data-slot="2">
+                        <div class="slot-number">Slot 2</div>
+                        <div class="slot-preview">
+                            <div class="slot-empty">Empty Slot</div>
+                            <div class="slot-info hidden">
+                                <div class="slot-character-name"></div>
+                                <div class="slot-details"></div>
+                                <div class="slot-timestamp"></div>
+                            </div>
+                        </div>
+                        <div class="slot-actions">
+                            <button class="btn btn-primary load-from-slot-btn" data-slot="2" disabled>Load Game</button>
+                            <button class="btn btn-danger btn-sm delete-slot-btn" data-slot="2" disabled>
+                                <span class="material-symbols-outlined">delete</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="load-slot-card" data-slot="3">
+                        <div class="slot-number">Slot 3</div>
+                        <div class="slot-preview">
+                            <div class="slot-empty">Empty Slot</div>
+                            <div class="slot-info hidden">
+                                <div class="slot-character-name"></div>
+                                <div class="slot-details"></div>
+                                <div class="slot-timestamp"></div>
+                            </div>
+                        </div>
+                        <div class="slot-actions">
+                            <button class="btn btn-primary load-from-slot-btn" data-slot="3" disabled>Load Game</button>
+                            <button class="btn btn-danger btn-sm delete-slot-btn" data-slot="3" disabled>
+                                <span class="material-symbols-outlined">delete</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="no-saves-message hidden">
+                    <p>No saved games found. Start a new adventure!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/telemetry.js"></script>
+    <script src="/offline-decks.js"></script>
+    <script src="/client.js"></script>
+    <script>
+        // Register Service Worker for offline functionality
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('[App] Service Worker registered successfully:', registration.scope);
+                    })
+                    .catch(error => {
+                        console.log('[App] Service Worker registration failed:', error);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>

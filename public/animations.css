@@ -1,0 +1,258 @@
+/* ========================================
+   BATTLE ANIMATIONS & EFFECTS
+   ======================================== */
+
+/* Damage Numbers Floating Animation */
+@keyframes damageFloat {
+    0% {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(-80px) scale(1.5);
+        opacity: 0;
+    }
+}
+
+.damage-number {
+    position: fixed;
+    font-family: var(--font-title);
+    font-size: 2rem;
+    font-weight: bold;
+    color: #ff4444;
+    text-shadow: 0 0 10px rgba(255, 68, 68, 0.8), 2px 2px 0 #000;
+    pointer-events: none;
+    z-index: 9999;
+    animation: damageFloat 1.5s ease-out forwards;
+}
+
+.damage-number.critical {
+    font-size: 3rem;
+    color: #ffaa00;
+    text-shadow: 0 0 20px rgba(255, 170, 0, 1), 0 0 40px rgba(255, 170, 0, 0.5), 2px 2px 0 #000;
+}
+
+.damage-number.heal {
+    color: #44ff44;
+    text-shadow: 0 0 10px rgba(68, 255, 68, 0.8), 2px 2px 0 #000;
+}
+
+/* Attack Slash Effect */
+@keyframes slashEffect {
+    0% {
+        transform: translateX(-100%) rotate(-45deg) scale(0);
+        opacity: 0;
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        transform: translateX(100%) rotate(-45deg) scale(1.5);
+        opacity: 0;
+    }
+}
+
+.attack-slash {
+    position: fixed;
+    width: 200px;
+    height: 10px;
+    background: linear-gradient(90deg, transparent, #fff, transparent);
+    box-shadow: 0 0 20px #fff;
+    pointer-events: none;
+    z-index: 9998;
+    animation: slashEffect 0.5s ease-out forwards;
+}
+
+/* Spell Cast Particles */
+@keyframes particleBurst {
+    0% {
+        transform: translate(0, 0) scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(var(--particle-x), var(--particle-y)) scale(0);
+        opacity: 0;
+    }
+}
+
+.spell-particle {
+    position: fixed;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #fff, var(--particle-color));
+    box-shadow: 0 0 10px var(--particle-color);
+    pointer-events: none;
+    z-index: 9998;
+    animation: particleBurst 1s ease-out forwards;
+}
+
+/* Level Up Celebration */
+@keyframes levelUpCelebration {
+    0% {
+        transform: scale(0) rotate(0deg);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.2) rotate(180deg);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1) rotate(360deg);
+        opacity: 1;
+    }
+}
+
+@keyframes levelUpGlow {
+    0%, 100% {
+        box-shadow: 0 0 20px rgba(240, 180, 41, 0.5);
+    }
+    50% {
+        box-shadow: 0 0 60px rgba(240, 180, 41, 1);
+    }
+}
+
+.level-up-effect {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 4rem;
+    color: var(--color-special);
+    text-shadow: 0 0 20px var(--color-glow);
+    pointer-events: none;
+    z-index: 9999;
+    animation: levelUpCelebration 1s ease-out, levelUpGlow 2s ease-in-out infinite;
+}
+
+/* Monster Spawn Effect */
+@keyframes monsterSpawn {
+    0% {
+        transform: scale(0) rotateY(0deg);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.2) rotateY(180deg);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(1) rotateY(360deg);
+        opacity: 1;
+    }
+}
+
+.monster-spawn-effect {
+    animation: monsterSpawn 0.8s ease-out;
+}
+
+/* Critical Hit Flash */
+@keyframes criticalFlash {
+    0%, 100% {
+        background-color: transparent;
+    }
+    50% {
+        background-color: rgba(255, 170, 0, 0.3);
+    }
+}
+
+.critical-flash-overlay {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9997;
+    animation: criticalFlash 0.5s ease-in-out;
+}
+
+/* Card Play Animation */
+@keyframes cardPlay {
+    0% {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: translateY(-20px) scale(1.1);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(-40px) scale(0.8);
+        opacity: 0;
+    }
+}
+
+.card-playing {
+    animation: cardPlay 0.6s ease-out forwards;
+}
+
+/* Shield Block Effect */
+@keyframes shieldBlock {
+    0% {
+        transform: scale(1);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.5);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 0;
+    }
+}
+
+.shield-block-effect {
+    position: fixed;
+    font-size: 4rem;
+    color: #5f9ea0;
+    text-shadow: 0 0 20px rgba(95, 158, 160, 0.8);
+    pointer-events: none;
+    z-index: 9998;
+    animation: shieldBlock 0.6s ease-out;
+}
+
+/* Button Press Feedback */
+.btn:active, .mode-btn:active {
+    transform: scale(0.95);
+    transition: transform 0.1s;
+}
+
+/* Monster Death Effect */
+@keyframes monsterDeath {
+    0% {
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(0) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+.monster-dying {
+    animation: monsterDeath 0.8s ease-out forwards;
+}
+
+/* HP Bar Damage Animation */
+@keyframes hpBarShake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+.hp-bar-hit {
+    animation: hpBarShake 0.3s ease-in-out;
+}
+
+/* XP Gain Pulse */
+@keyframes xpPulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+        filter: brightness(1.3);
+    }
+}
+
+.xp-bar-gain {
+    animation: xpPulse 0.5s ease-in-out;
+}
