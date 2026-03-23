@@ -12,7 +12,7 @@ For manual QA, see [`PLAYTEST.md`](./PLAYTEST.md).
 |-------|------|
 | **`server.js` → `GameManager`** | Authoritative game rules, combat, loot, turns, shops, dungeon events. Mutates `room` / `room.gameState` / `room.players`. |
 | **`emitGameState(roomId)`** | The **only** broadcast of full room snapshot. Emits **`gameStateUpdate`** to everyone in the room (includes `staticData` for classes). |
-| **`public/client.js`** | Treats **`gameStateUpdate`** as truth: assigns `currentRoomState` and drives UI. **Do not** assume combat/turn/gold state from older socket events alone. **Turn UX:** `turnPopupReady` (action bar / click gating) only becomes true after the **Your Turn** overlay has been shown for the current turn session, **after** the toast queue has drained (no skipping queued combat toasts). |
+| **`public/client.js`** | Treats **`gameStateUpdate`** as truth: assigns `currentRoomState` and drives UI. **Do not** assume combat/turn/gold state from older socket events alone. **Turn UX:** `turnPopupReady` (action bar / click gating) only becomes true after the **Your Turn** overlay has been shown for the current turn session, **after** the toast queue has drained (no skipping queued combat toasts). **Toasts:** most combat/action lines stay in the **chat log** only; only a few high-signal types toast for *other* players (e.g. `dm`, `system-good`). |
 | **`public/offline-*.js`** | Mirrors server behavior for solo offline; not authoritative online. |
 
 ---
@@ -53,7 +53,8 @@ Everything else in the main `switch` is subject to the turn check.
 | Event | Purpose |
 |-------|---------|
 | `createRoom` / `joinRoom` / `rejoinRoom` | Lobby and reconnect. |
-| `startGame` / `chooseClass` / `equipItem` | Setup. |
+| `startGame` / `chooseClass` | Setup / run start. |
+| `equipItem` | `{ cardId }` — **your turn**, weapon/armor **in hand**, 1 AP; previous slot returns to hand. |
 | `endTurn` | Ends explorer turn (`beginEndOfTurnPhase`). |
 | `playerAction` | **Main action pipe** — attacks, spells, grid, skill checks, path choices wrapped as actions, etc. (`resolvePlayerAction`). |
 | `pauseGameForModal` / `resumeGameFromModal` | UI coordination; see §2 for resume matching. |

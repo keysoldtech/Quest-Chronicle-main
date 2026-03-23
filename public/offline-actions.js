@@ -712,10 +712,13 @@ const OfflineActionHandler = {
         const { cardId } = payload;
         const card = player.hand.find(c => c.id === cardId);
         
-        if (!card) return true;
+        if (!card) {
+            showToast('Equip from your hand: select a weapon/armor card there, then Equip.', 'warning', 4000);
+            return true;
+        }
         
         if (player.currentAp < 1) {
-            showToast('Not enough AP', 'error');
+            showToast('Not enough AP to equip (need 1 AP).', 'error');
             return true;
         }
         
@@ -723,14 +726,21 @@ const OfflineActionHandler = {
         
         player.equipment = player.equipment || {};
         
-        if (card.type === 'Weapon') {
-            player.equipment.weapon = card;
-        } else if (card.type === 'Armor') {
-            player.equipment.armor = card;
+        const slot = card.type === 'Weapon' ? 'weapon' : card.type === 'Armor' ? 'armor' : null;
+        if (!slot) {
+            showToast('Only weapons and armor can be equipped.', 'warning');
+            player.currentAp += 1;
+            return true;
         }
-        
-        this.addChatLog('action', player.name, `${player.name} equipped ${card.name}`);
+        const prev = player.equipment[slot];
+        player.equipment[slot] = card;
         player.hand = player.hand.filter(c => c.id !== cardId);
+        if (prev) {
+            player.hand.push(prev);
+            this.addChatLog('action', player.name, `${player.name} swapped to ${card.name} (previous ${prev.name} returned to hand).`);
+        } else {
+            this.addChatLog('action-good', player.name, `${player.name} equipped ${card.name}.`);
+        }
         
         this.updateUI();
         return true;

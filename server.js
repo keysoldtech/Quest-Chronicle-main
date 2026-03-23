@@ -1118,8 +1118,11 @@ class GameManager {
         const room = this.findRoomBySocket(socket);
         const player = room?.players[socket.id];
         if (!room || !player) return;
+        const currentTurnPlayerId = room.gameState.turnOrder[room.gameState.currentPlayerIndex];
+        if (player.id !== currentTurnPlayerId) {
+            return socket.emit('actionError', 'Equip only on your turn.');
+        }
         if (player.currentAp < 1) {
-            // CRITICAL FIX: Send specific AP error for equip
             if (player.currentAp === 0) {
                 socket.emit('actionError', 'NO_AP_END_TURN');
             } else {
@@ -1127,36 +1130,34 @@ class GameManager {
             }
             return;
         }
-    
-        const cardIndex = player.hand.findIndex(c => c.id === cardId);
-        if (cardIndex === -1) return;
-    
+
+        const cardIndex = player.hand.findIndex((c) => c.id === cardId);
+        if (cardIndex === -1) {
+            return socket.emit('actionError', 'That card is not in your hand — select it in your hand, then Equip (1 AP).');
+        }
+
         const cardToEquip = player.hand[cardIndex];
         const itemType = (cardToEquip.type || '').toLowerCase();
-        if (itemType !== 'weapon' && itemType !== 'armor') return;
-    
+        if (itemType !== 'weapon' && itemType !== 'armor') {
+            return socket.emit('actionError', 'Only weapons and armor can be equipped from hand.');
+        }
+
         player.currentAp -= 1;
-    
+
         const currentlyEquipped = player.equipment[itemType];
         player.equipment[itemType] = player.hand.splice(cardIndex, 1)[0];
-    
+
         if (currentlyEquipped) {
             this._giveCardToPlayer(room, player, currentlyEquipped);
         }
-    
+
         player.stats = this.calculatePlayerStats(player, room.gameState.partyHope);
-        // Apply specialization effects (Phase 2: basic hooks)
-        if (specData && specData.effect) {
-            if (specData.effect.counterattack) {
-                player.reactionReady = 'Riposte';
-            }
-            if (typeof specData.effect.executeThreshold === 'number') {
-                player.executeThreshold = specData.effect.executeThreshold;
-            }
-            if (specData.effect.ambushAdvantage) {
-                player.hasAmbushAdvantage = true;
-            }
-        }
+        room.chatLog.push({
+            type: 'action-good',
+            playerName: player.name,
+            text: `${player.name} equipped ${cardToEquip.name}.`,
+            timestamp: Date.now()
+        });
         this.emitGameState(room.id);
     }
 
@@ -1768,6 +1769,9 @@ class GameManager {
         console.log(`[StartNewTurn] Starting turn for ${player.name} (ID: ${player.id}, isNpc: ${player.isNpc}, role: ${player.role})`);
         player.currentAp = player.stats.maxAP;
         player.usedAbilityThisTurn = false;
+        if (player.class && !player.isNpc) {
+            player._duelistOpeningUsed = false;
+        }
         
         // CRITICAL FIX: Reset movement points each turn (separate from AP!)
         const dashingBonus = player.statusEffects?.find(e => e.name === 'Dashing')?.bonuses?.movementBonus || 0;
@@ -2644,7 +2648,12 @@ class GameManager {
         const isCompanion = target && target.type === 'Companion';
         
         if (isPlayer) {
-            const damageAfterShield = damage - (target.stats.shieldHp || 0);
+            let dmg = damage;
+            if (target.equipment?.armor?.name === 'Indomitable Plating' && dmg > 0) {
+                dmg = Math.max(0, dmg - 1);
+                logParts.push(`Indomitable Plating ignores 1 damage.`);
+            }
+            const damageAfterShield = dmg - (target.stats.shieldHp || 0);
             if (damageAfterShield <= 0) {
                 target.stats.shieldHp -= damage;
                 logParts.push(`attack was absorbed by ${target.name}'s shield!`);
@@ -2692,6 +2701,83 @@ class GameManager {
         }
         
         return { wasDefeated, logParts };
+    }
+
+    /**
+     * Weapon card "Special" lines in game-data: apply a small subset as real combat math.
+     * (Descriptions remain on the card; this makes key bonuses visible in the log.)
+     */
+    _applyMonsterHitSpecials(room, monster, target, weaponCard) {
+        const desc = (weaponCard?.effect?.description || '').toLowerCase();
+        if (!desc || !target.class) return;
+        if (desc.includes('poisoned')) {
+            const con = target.stats?.con || 0;
+            const roll = this.rollDie('d20');
+            const total = roll + con;
+            const dc = 11;
+            if (total < dc) {
+                this._applyStatusEffect(room, target, 'Poisoned', 3);
+                room.chatLog.push({
+                    type: 'combat',
+                    text: `${monster.name}'s venom sickens ${target.name}! (${roll}+${con} vs DC ${dc}) Poisoned.`,
+                    timestamp: Date.now()
+                });
+            } else {
+                room.chatLog.push({
+                    type: 'combat',
+                    text: `${target.name} shrugs off ${monster.name}'s poison (${roll}+${con} vs DC ${dc}).`,
+                    timestamp: Date.now()
+                });
+            }
+        }
+        if (desc.includes('engulfed')) {
+            this._applyStatusEffect(room, target, 'Engulfed', 2);
+            room.chatLog.push({
+                type: 'combat',
+                text: `${monster.name} engulfs ${target.name}! ${target.name} is Engulfed — escape on STR save at turn start.`,
+                timestamp: Date.now()
+            });
+        }
+    }
+
+    _applyWeaponDamageModifiers(room, attacker, weapon, target, diceString, staticBonus) {
+        let dice = diceString;
+        let bonus = staticBonus;
+        const wname = (weapon.name || '').toLowerCase();
+        const tgtShield = (target.stats?.shieldBonus || 0) > 0;
+
+        if (wname.includes('balanced steel') && tgtShield) {
+            bonus += 2;
+            room.chatLog.push({ type: 'system-good', rollerName: attacker.name, text: `${weapon.name} — Guard Breaker: +2 damage vs shielded foe.`, timestamp: Date.now() });
+        }
+        if (wname.includes('bone thumper') && tgtShield) {
+            bonus += 1;
+            room.chatLog.push({ type: 'system-good', rollerName: attacker.name, text: `${weapon.name} — Solid Strike: +1 damage vs shielded foe.`, timestamp: Date.now() });
+        }
+        if (wname.includes('farstrike bow')) {
+            bonus += 1;
+            room.chatLog.push({ type: 'system-good', rollerName: attacker.name, text: `${weapon.name} — Piercing Shot: +1 to hit translated as +1 damage here.`, timestamp: Date.now() });
+        }
+        if (wname.includes('swiftflight bow')) {
+            const grid = room.gameState.grid;
+            const ap = grid?.entities?.[attacker.id];
+            const tp = grid?.entities?.[target.id];
+            if (ap && tp) {
+                const dist = Math.abs(ap.x - tp.x) + Math.abs(ap.y - tp.y);
+                if (dist <= 1) {
+                    const pen = this.rollDiceWithDetails('1d4').total;
+                    bonus -= pen;
+                    room.chatLog.push({ type: 'system-good', rollerName: attacker.name, text: `${weapon.name} — Close-range penalty: -${pen} damage.`, timestamp: Date.now() });
+                }
+            }
+        }
+        if (wname.includes("duelist's point") && attacker.class && !attacker.isNpc && !attacker._duelistOpeningUsed) {
+            const ex = this.rollDiceWithDetails('1d4').total;
+            bonus += ex;
+            attacker._duelistOpeningUsed = true;
+            room.chatLog.push({ type: 'system-good', rollerName: attacker.name, text: `${weapon.name} — Opening Flourish: +${ex} damage (first hit this turn).`, timestamp: Date.now() });
+        }
+        return { dice, staticBonus: bonus };
     }
 
     resolvePlayerAction(socket, payload) {
@@ -3007,6 +3093,9 @@ class GameManager {
                     const { wasDefeated, logParts } = this._applyDamage(room, target, totalDamage, { id: attacker.id, name: attacker.name });
                     let logText = `${attacker.name} deals ${totalDamage} damage to ${target.name}! ${logParts.join(' ')}`;
                     room.chatLog.push({ type: 'combat-hit', rollerName: attacker.name, text: logText, timestamp: Date.now() });
+                    if (isPlayerTarget) {
+                        this._applyMonsterHitSpecials(room, attacker, target, weaponCard);
+                    }
                     
                     const damageResolvedPayload = {
                         rollerId: 'npc-dm',
@@ -3066,6 +3155,9 @@ class GameManager {
                     const { wasDefeated, logParts } = this._applyDamage(room, target, totalDamage, { id: attacker.id, name: attacker.name });
                     let logText = `${attacker.name} deals ${totalDamage} damage to ${target.name}! ${logParts.join(' ')}`;
                     room.chatLog.push({ type: 'combat-hit', rollerName: attacker.name, text: logText, timestamp: Date.now() });
+                    if (isPlayerTarget) {
+                        this._applyMonsterHitSpecials(room, attacker, target, weaponCard);
+                    }
                     
                     const damageResolvedPayload = {
                         rollerId: 'npc-dm',
@@ -3179,16 +3271,19 @@ class GameManager {
 
                 const combinedDice = [weapon.effect.dice, consumedBonuses.extraDamageDice].filter(Boolean).join('+');
                 const parsed = this.parseDiceString(combinedDice);
+                const baseStatic = parsed.bonus + attacker.stats.damageBonus + consumedBonuses.damageBonus + (attacker.stats.flankingBonus || 0);
+                const mod = this._applyWeaponDamageModifiers(room, attacker, weapon, target, combinedDice, baseStatic);
+                const parsed2 = this.parseDiceString(mod.dice);
 
                 attacker.pendingAction = { 
                     actionType: 'damageRoll',
                     weaponId, 
                     targetId, 
                     rolls: [],
-                    diceToRoll: parsed.dice,
+                    diceToRoll: parsed2.dice,
                     // CRITICAL FIX: Include flanking bonus in damage calculation
-                    staticBonus: parsed.bonus + attacker.stats.damageBonus + consumedBonuses.damageBonus + (attacker.stats.flankingBonus || 0),
-                    totalDice: parsed.dice.length,
+                    staticBonus: mod.staticBonus,
+                    totalDice: parsed2.dice.length,
                     title: weapon.name,
                     sourceAttacker: { id: attacker.id, name: attacker.name, isPlayer: true }
                 };

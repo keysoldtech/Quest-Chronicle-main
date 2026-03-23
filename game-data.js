@@ -308,6 +308,7 @@ const magicalAffixes = [
 // --- 6. CARD DATA ---
 
 // --- 6.1. Weapon Cards ---
+// "Special:" lines: several are implemented in server.js `_applyWeaponDamageModifiers` (Balanced Steel, Bone Thumper, Farstrike, Swiftflight, Duelist's Point, Doomcleaver crit). Others remain flavor until extended.
 const weaponCards = [
     { name: "Axechuck", type: "Weapon", apCost: 1, class: ["Warrior", "Barbarian", "Ranger"], effect: { dice: "1d6", description: "Thrown (20/60), Special: Returning Edge - Returns to hand at end of turn (If thrown and hand free)." } },
     { name: "Balanced Steel", type: "Weapon", apCost: 2, class: ["Warrior", "Rogue", "Ranger"], effect: { dice: "1d8", description: "Versatile (1d10), Special: Guard Breaker - Deals +2 damage to targets with active Shield HP." } },

@@ -1,5 +1,5 @@
 /** Client build label — bump with package.json / README. */
-const QC_VERSION = '4.3.7';
+const QC_VERSION = '4.3.8';
 
 /**
  * Verbose client logs (voice, socket, grid, load game, etc.).
@@ -1025,7 +1025,7 @@ function renderUI() {
     const { players, gameState, chatLog, hostId } = currentRoomState;
     const { phase, isPaused, pauseReason } = gameState;
     
-    // --- Toasts for new actions (after paint so board/grid match the toast) ---
+    // --- Toasts: keep combat + major actions in the game log only (less queue backlog). ---
     const logSliceStart = clientState.lastLogLength;
     clientState.lastLogLength = chatLog.length;
     const newLogEntries = chatLog.slice(logSliceStart);
@@ -1033,9 +1033,11 @@ function renderUI() {
         requestAnimationFrame(() => {
             newLogEntries.forEach(entry => {
                 const isMyAction = entry.playerId === myId || entry.rollerId === myId;
-                const isToastable = !['chat', 'narrative', 'system', 'combat', 'combat-hit', 'action', 'action-good'].includes(entry.type);
+                // Toast only high-signal events for *other* players (DM, path, synergy, level, discovery).
+                const toastTypes = new Set(['dm', 'system-good']);
+                const isToastable = toastTypes.has(entry.type);
                 if (isToastable && !isMyAction) {
-                    showToast(entry.text, 'info');
+                    showToast(entry.text, 'info', 2800);
                 }
             });
         });
@@ -3623,12 +3625,12 @@ const helpContent = [
     {
         icon: 'grid_on',
         title: 'Combat Grid & Positioning',
-        content: `<p>Combat happens on a <b class="help-keyword">5×5 tactical grid</b> where position matters!</p>
+        content: `<p>Combat happens on a <b class="help-keyword">5×5 tactical grid</b>. It is not just decoration: <b>movement</b> spends movement points, and in <b>Advanced / Custom</b> modes the server checks <b>distance</b> before attacks (melee = 1 tile, reach = 2, ranged = at least 2 tiles away).</p>
             <ul>
                 <li><b class="help-keyword">Grid Layout:</b> Monsters spawn in front rows (0-2), players start in back rows (3-4).</li>
-                <li><b class="help-keyword">Flanking:</b> When you and an ally are both adjacent to an enemy, you <b class="help-keyword success">flank</b> them for a <b>+2 attack bonus</b>!</li>
-                <li><b class="help-keyword">Mobile:</b> Tap "View Grid" button to see the battlefield, then tap green cells to move.</li>
-                <li><b>Tip:</b> Coordinate with your party to surround enemies and gain flanking bonuses!</li>
+                <li><b class="help-keyword">Flanking:</b> When you and an ally are both adjacent to an enemy, you <b class="help-keyword success">flank</b> them for a <b>+2 attack bonus</b> (shown on your stats while flanking).</li>
+                <li><b class="help-keyword">Mobile:</b> Tap "View Grid" / expand the grid header, then tap green cells to move.</li>
+                <li><b>Beginner mode</b> skips range checks — grid is still useful for movement and flanking.</li>
             </ul>`
     },
     {
@@ -3641,7 +3643,7 @@ const helpContent = [
             <ul>
                 <li><b>Desktop:</b> Click green highlighted cells on the grid.</li>
                 <li><b>Mobile:</b> Tap "View Grid" button, then tap green cells.</li>
-                <li>You'll see a toast notification and the destination will pulse golden!</li>
+                <li>The game log records your move; the destination cell pulses on the grid.</li>
             </ul>
             
             <p><b class="help-keyword">Weapon Ranges</b> (Advanced & Custom modes):</p>

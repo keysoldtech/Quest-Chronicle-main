@@ -1,6 +1,6 @@
 # 🎮 Quest & Chronicle - Multiplayer Tactical Card Game
 
-**Version:** v4.3.7  
+**Version:** v4.3.8  
 **Status:** Play-Testing Ready ✅  
 **Platform:** Web (PWA) - Works on all devices  
 **Modes:** Online Multiplayer + Offline Solo Play  
@@ -538,7 +538,8 @@ This project is for personal/educational use.
 
 ## 🎯 Version History
 
-- **v4.3.7** (Current) - Server: **Path “shop” after End Turn** — `beginEndOfTurnPhase` returned early for path choice without advancing the turn; choosing shop then closing could leave `currentPlayerIndex` on the same explorer (skipping others). After multiplayer shop fully closes, **`moveToNextTurn`** runs when the shop came from path choice (`pendingTurnAfterPathShop`).
+- **v4.3.8** (Current) - **Toasts:** only DM + major `system-good` lines toast for other players; combat/actions stay in the log. **Grid:** hint under grid + help text clarifies range/flanking. **Equip:** server validates turn + hand + clear errors; equip logs to chat. **Weapon specials:** server applies a subset (Balanced Steel, Bone Thumper, Farstrike, Swiftflight close penalty, Duelist’s Opening, Doomcleaver). **Armor:** Indomitable Plating ignores 1 damage per hit. **Monsters:** on-hit text applies Poisoned (Spider) / Engulfed (Cube) vs players. Offline equip returns old gear to hand.
+- **v4.3.7** - Server: **Path “shop” after End Turn** — `beginEndOfTurnPhase` returned early for path choice without advancing the turn; choosing shop then closing could leave `currentPlayerIndex` on the same explorer (skipping others). After multiplayer shop fully closes, **`moveToNextTurn`** runs when the shop came from path choice (`pendingTurnAfterPathShop`).
 - **v4.3.6** - Client: **Your Turn** banner and action unlock wait until the toast queue has fully drained (no skipping queued combat toasts). Actions still disabled until the banner has rendered.
 - **v4.3.5** - Client: actions stay disabled until the **Your Turn** banner has actually appeared; first-turn tutorial toast after the banner gate.
 - **v4.3.4** - Docs: [`docs/AUTHORITY-AND-EVENTS.md`](docs/AUTHORITY-AND-EVENTS.md) — server authority, pause rules, socket ordering, turn bypasses (linked from README).
@@ -617,7 +618,7 @@ This project is for personal/educational use.
 
 ---
 
-**Current Version:** v4.3.7  
+**Current Version:** v4.3.8  
 **Last Updated:** 2026-03-20  
 **Status:** Play-test ready ✅  
 
