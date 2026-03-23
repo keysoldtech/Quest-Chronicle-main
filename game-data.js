@@ -218,6 +218,7 @@ const statusEffectDefinitions = {
     'Obscured': { bonuses: { shieldBonus: 4 }, description: 'You are obscured by smoke, making you harder to hit (+4 Shield Bonus).' },
     'On Fire': { trigger: 'start', damage: '1d6', description: 'Takes 1d6 damage at the start of their turn.', saveDC: 12, saveStat: 'dex', saveMessage: 'tries to put out the flames!' },
     'Poisoned': { trigger: 'start', damage: '1d4', description: 'Takes 1d4 damage at the start of their turn.' },
+    'Steady Aim': { extraDamageDice: '1d4', consumesOn: 'attack', description: 'Next weapon attack deals +1d4 damage (Bolt Sprinter + Brace).' },
     'Power Surge Ready': { bonuses: { hitBonus: 2, damageBonus: 2 }, consumesOn: 'attack', description: 'Your next attack has +2 to hit and +2 damage.' },
     'Raging': { bonuses: { damageBonus: 4 }, description: 'Dealing +4 damage on all attacks this turn.' },
     'Restrained': { cannotAct: true, description: 'Cannot move or take actions.', trigger: 'end', saveDC: 14, saveStat: ['str', 'dex'], saveMessage: 'tries to break free!' },
@@ -308,7 +309,7 @@ const magicalAffixes = [
 // --- 6. CARD DATA ---
 
 // --- 6.1. Weapon Cards ---
-// "Special:" lines: several are implemented in server.js `_applyWeaponDamageModifiers` (Balanced Steel, Bone Thumper, Farstrike, Swiftflight, Duelist's Point, Doomcleaver crit). Others remain flavor until extended.
+// "Special:" lines: see server.js `_applyWeaponDamageModifiers`, `_resolveDiceSequence` (Axechuck, Bolt Sprinter+Dodge, Impact Cleaver, Quick Blade, Shadowtooth, Farstrike 1/turn), `resolveDodge`/`resolveRetreat`, armor in `_applyDamage` (Fury Cuirass hit bonus, Thornmail, Phase Shroud, Crystal Hide).
 const weaponCards = [
     { name: "Axechuck", type: "Weapon", apCost: 1, class: ["Warrior", "Barbarian", "Ranger"], effect: { dice: "1d6", description: "Thrown (20/60), Special: Returning Edge - Returns to hand at end of turn (If thrown and hand free)." } },
     { name: "Balanced Steel", type: "Weapon", apCost: 2, class: ["Warrior", "Rogue", "Ranger"], effect: { dice: "1d8", description: "Versatile (1d10), Special: Guard Breaker - Deals +2 damage to targets with active Shield HP." } },

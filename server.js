@@ -1771,6 +1771,11 @@ class GameManager {
         player.usedAbilityThisTurn = false;
         if (player.class && !player.isNpc) {
             player._duelistOpeningUsed = false;
+            player._farstrikePiercingUsed = false;
+            player._quickBladeAttacks = 0;
+            player._quickBladeRetreatUsed = false;
+            player._phaseShroudUsedThisTurn = false;
+            player.wayfinderDeflectReady = false;
         }
         
         // CRITICAL FIX: Reset movement points each turn (separate from AP!)
@@ -2641,17 +2646,41 @@ class GameManager {
     }
     
     // --- 3.7. Action Resolution ---
-    _applyDamage(room, target, damage, sourceAttacker) {
+    _applyDamage(room, target, damage, sourceAttacker, meta = {}) {
         let logParts = [];
         let wasDefeated = false;
         const isPlayer = !!target.class;
         const isCompanion = target && target.type === 'Companion';
-        
+        const fromMonsterHit = !!(sourceAttacker?.id && room.gameState.board.monsters?.some((m) => m.id === sourceAttacker.id));
+
         if (isPlayer) {
             let dmg = damage;
             if (target.equipment?.armor?.name === 'Indomitable Plating' && dmg > 0) {
                 dmg = Math.max(0, dmg - 1);
                 logParts.push(`Indomitable Plating ignores 1 damage.`);
+            }
+            if (fromMonsterHit && target.equipment?.armor?.name === 'Crystal Hide' && dmg > 0) {
+                dmg = Math.floor(dmg * 0.85);
+                logParts.push(`Crystal Hide softens the blow (-15%).`);
+            }
+            if (fromMonsterHit && target.equipment?.armor?.name === 'Phase Shroud' && dmg > 0 && !target._phaseShroudUsedThisTurn) {
+                const r = this.rollDie('d20');
+                if (r >= 11) {
+                    target._phaseShroudUsedThisTurn = true;
+                    dmg = 0;
+                    logParts.push(`Phase Shroud phases the strike away!`);
+                }
+            }
+            if (fromMonsterHit && target.wayfinderDeflectReady && target.currentAp >= 1 && dmg > 0) {
+                target.currentAp -= 1;
+                target.wayfinderDeflectReady = false;
+                const reduced = Math.max(0, dmg - 2);
+                room.chatLog.push({
+                    type: 'system-good',
+                    text: `${target.name} Deflects with Wayfinder's Staff (-2 damage, 1 AP).`,
+                    timestamp: Date.now()
+                });
+                dmg = reduced;
             }
             const damageAfterShield = dmg - (target.stats.shieldHp || 0);
             if (damageAfterShield <= 0) {
@@ -2669,6 +2698,17 @@ class GameManager {
                 wasDefeated = true;
                 logParts.push(`${target.name} is Downed!`);
                 this._modifyPartyHope(room, -2);
+            }
+            if (fromMonsterHit && meta.isCrit && target.equipment?.armor?.name === 'Thornmail') {
+                const mon = room.gameState.board.monsters.find((m) => m.id === sourceAttacker.id);
+                if (mon && mon.currentHp > 0) {
+                    mon.currentHp = Math.max(0, mon.currentHp - 1);
+                    room.chatLog.push({
+                        type: 'combat',
+                        text: `${target.name}'s Thornmail spines sting ${mon.name} for 1!`,
+                        timestamp: Date.now()
+                    });
+                }
             }
         } else if (isCompanion) {
             target.currentHp -= damage;
@@ -2745,18 +2785,22 @@ class GameManager {
         let bonus = staticBonus;
         const wname = (weapon.name || '').toLowerCase();
         const tgtShield = (target.stats?.shieldBonus || 0) > 0;
+        const monsterArmorShield = !target.class && (target.stats?.shieldBonus || 0) > 0;
 
         if (wname.includes('balanced steel') && tgtShield) {
             bonus += 2;
             room.chatLog.push({ type: 'system-good', rollerName: attacker.name, text: `${weapon.name} — Guard Breaker: +2 damage vs shielded foe.`, timestamp: Date.now() });
         }
-        if (wname.includes('bone thumper') && tgtShield) {
+        if (wname.includes('bone thumper') && (tgtShield || monsterArmorShield)) {
             bonus += 1;
-            room.chatLog.push({ type: 'system-good', rollerName: attacker.name, text: `${weapon.name} — Solid Strike: +1 damage vs shielded foe.`, timestamp: Date.now() });
+            room.chatLog.push({ type: 'system-good', rollerName: attacker.name, text: `${weapon.name} — Solid Strike: +1 vs armored foe.`, timestamp: Date.now() });
         }
-        if (wname.includes('farstrike bow')) {
-            bonus += 1;
-            room.chatLog.push({ type: 'system-good', rollerName: attacker.name, text: `${weapon.name} — Piercing Shot: +1 to hit translated as +1 damage here.`, timestamp: Date.now() });
+        if (wname.includes('impact cleaver')) {
+            const versatile = (weapon.effect?.description || '').toLowerCase().includes('versatile');
+            if (versatile) {
+                attacker.movementPoints = (attacker.movementPoints || 0) + 1;
+                room.chatLog.push({ type: 'system-good', rollerName: attacker.name, text: `${weapon.name} — Momentum Swing: +1 movement this turn.`, timestamp: Date.now() });
+            }
         }
         if (wname.includes('swiftflight bow')) {
             const grid = room.gameState.grid;
@@ -2776,6 +2820,19 @@ class GameManager {
             bonus += ex;
             attacker._duelistOpeningUsed = true;
             room.chatLog.push({ type: 'system-good', rollerName: attacker.name, text: `${weapon.name} — Opening Flourish: +${ex} damage (first hit this turn).`, timestamp: Date.now() });
+        }
+        if (wname.includes('axechuck') && attacker.class && !attacker.isNpc) {
+            const handCount = (attacker.hand || []).length;
+            if (handCount < 5) {
+                const tpl = gameData.weaponCards.find((c) => c.name === 'Axechuck');
+                const copy = {
+                    ...(tpl || { name: 'Axechuck', type: 'Weapon', apCost: 1, effect: { dice: '1d6' } }),
+                    id: `axechuck_return_${Date.now()}`,
+                    name: 'Axechuck'
+                };
+                this._giveCardToPlayer(room, attacker, copy);
+                room.chatLog.push({ type: 'system-good', rollerName: attacker.name, text: `${weapon.name} — Returning Edge: caught in hand!`, timestamp: Date.now() });
+            }
         }
         return { dice, staticBonus: bonus };
     }
@@ -3090,7 +3147,7 @@ class GameManager {
                     const attackerDamageBonus = !attacker.attackBonus ? (attacker.stats?.damageBonus || 0) : 0;
                     const totalDamage = damageDetails.total + attackerDamageBonus;
 
-                    const { wasDefeated, logParts } = this._applyDamage(room, target, totalDamage, { id: attacker.id, name: attacker.name });
+                    const { wasDefeated, logParts } = this._applyDamage(room, target, totalDamage, { id: attacker.id, name: attacker.name }, { isCrit: roll === 20 });
                     let logText = `${attacker.name} deals ${totalDamage} damage to ${target.name}! ${logParts.join(' ')}`;
                     room.chatLog.push({ type: 'combat-hit', rollerName: attacker.name, text: logText, timestamp: Date.now() });
                     if (isPlayerTarget) {
@@ -3152,7 +3209,7 @@ class GameManager {
                     const attackerDamageBonus = !attacker.attackBonus ? (attacker.stats?.damageBonus || 0) : 0;
                     const totalDamage = damageDetails.total + attackerDamageBonus;
 
-                    const { wasDefeated, logParts } = this._applyDamage(room, target, totalDamage, { id: attacker.id, name: attacker.name });
+                    const { wasDefeated, logParts } = this._applyDamage(room, target, totalDamage, { id: attacker.id, name: attacker.name }, { isCrit: roll === 20 });
                     let logText = `${attacker.name} deals ${totalDamage} damage to ${target.name}! ${logParts.join(' ')}`;
                     room.chatLog.push({ type: 'combat-hit', rollerName: attacker.name, text: logText, timestamp: Date.now() });
                     if (isPlayerTarget) {
@@ -3222,13 +3279,20 @@ class GameManager {
     
             const logParts = [];
             const consumedBonuses = this._consumeAndApplyAttackBuffs(attacker, logParts);
+            const wnameLower = (weapon.name || '').toLowerCase();
+            if (wnameLower.includes('quick blade')) {
+                attacker._quickBladeAttacks = (attacker._quickBladeAttacks || 0) + 1;
+            }
     
             // Advantage/disadvantage
             const rollA = this.rollDie('d20');
             const rollB = this.rollDie('d20');
             let roll = rollA;
             // Advantage if flanking or high ground
-            const hasAdv = (attacker.stats.flankingBonus > 0) || (attacker.positioning?.elevation || 0) > 0;
+            let hasAdv = (attacker.stats.flankingBonus > 0) || (attacker.positioning?.elevation || 0) > 0;
+            if (wnameLower.includes('shadowtooth') && target.statusEffects?.some((e) => e.name === 'Poisoned')) {
+                hasAdv = true;
+            }
             // Disadvantage if target has cover
             const hasDis = (target.positioning?.cover || 0) >= 2;
             if (hasAdv && !hasDis) roll = Math.max(rollA, rollB);
@@ -3236,6 +3300,9 @@ class GameManager {
             // CRITICAL FIX: Include flanking bonus in attack roll calculation
             const flankingBonus = attacker.stats.flankingBonus || 0;
             let bonus = attacker.stats.hitBonus + consumedBonuses.hitBonus + flankingBonus - (target.positioning?.cover || 0);
+            if (attacker.equipment?.armor?.name === 'Fury Cuirass' && attacker.stats.currentHp * 2 <= attacker.stats.maxHp) {
+                bonus += 1;
+            }
             // Elemental statuses for combos
             if (target.statusEffects?.some(e => e.name === 'Oiled') && weapon.name?.toLowerCase().includes('flame')) {
                 this._triggerSynergy(room, attacker, 'elementCombustion', { damageBonus: 4 });
@@ -3248,8 +3315,18 @@ class GameManager {
                     this._triggerSynergy(room, attacker, 'electrocute', { damageBonus: 3 });
                 }
             }
+            let targetAC = target.requiredRollToHit;
+            if (wnameLower.includes('farstrike bow') && !attacker._farstrikePiercingUsed) {
+                targetAC = Math.max(1, targetAC - 1);
+                attacker._farstrikePiercingUsed = true;
+                room.chatLog.push({
+                    type: 'action',
+                    rollerName: attacker.name,
+                    text: `${weapon.name} — Piercing Shot: treat AC as ${targetAC} for this hit (1/turn).`,
+                    timestamp: Date.now()
+                });
+            }
             const total = roll + bonus;
-            const targetAC = target.requiredRollToHit;
             // Meta-perk: Critical Expert gives 5% extra crit chance (crit on 19-20)
             const perkMults = this._getMetaPerkMultipliers(attacker);
             const critThreshold = perkMults.critChanceBonus > 0 ? 19 : 20;
@@ -3278,6 +3355,7 @@ class GameManager {
                 attacker.pendingAction = { 
                     actionType: 'damageRoll',
                     weaponId, 
+                    weaponName: weapon.name,
                     targetId, 
                     rolls: [],
                     diceToRoll: parsed2.dice,
@@ -3528,6 +3606,15 @@ class GameManager {
             let logText = `${sourceAttacker.name} deals ${totalValue} damage to ${target.name}! ${logParts.join(' ')}`;
             
             room.chatLog.push({ type: 'combat-hit', rollerName: sourceAttacker.name, rollerId: sourceAttacker.id, text: logText, timestamp: Date.now() });
+            const wn = (pa.weaponName || '').toLowerCase();
+            if (wn.includes('shadowtooth') && target.currentHp > 0) {
+                this._applyStatusEffect(room, target, 'Poisoned', 3);
+                room.chatLog.push({
+                    type: 'combat',
+                    text: `${sourceAttacker.name}'s Shadowtooth — Poison Ready: ${target.name} is Poisoned!`,
+                    timestamp: Date.now()
+                });
+            }
             io.to(room.id).emit('damageResolved', { rollerId: player.id, rollerName: sourceAttacker.name, rolls: pa.rolls, damageRoll: totalRollValue, damageBonus: pa.staticBonus + synergyBonus, totalDamage: totalValue, wasDefeated });
         
         } else if (pa.actionType === 'cardEffectRoll' || pa.actionType === 'abilityEffectRoll') {
@@ -3785,6 +3872,26 @@ class GameManager {
         if (!player.statusEffects) player.statusEffects = [];
         player.statusEffects.push({ name: 'Dodging', duration: 1, bonuses: { shieldBonus: 2 } });
         player.stats.shieldBonus += 2; // Immediate shield bonus
+
+        const wn = (player.equipment?.weapon?.name || '').toLowerCase();
+        if (wn.includes('bolt sprinter')) {
+            this._applyStatusEffect(room, player, 'Steady Aim', 2);
+            room.chatLog.push({
+                type: 'action-good',
+                playerName: player.name,
+                text: `${player.name} Braces — next weapon attack gains +1d4 (Steady Aim).`,
+                timestamp: Date.now()
+            });
+        }
+        if (wn.includes("wayfinder's staff")) {
+            player.wayfinderDeflectReady = true;
+            room.chatLog.push({
+                type: 'action-good',
+                playerName: player.name,
+                text: `${player.name} readies Deflect (+2 vs next hit, spend 1 AP when struck).`,
+                timestamp: Date.now()
+            });
+        }
         
         room.chatLog.push({ type: 'action', playerName: player.name, text: `${player.name} takes a defensive stance, dodging incoming attacks!`, timestamp: Date.now() });
         this.emitGameState(room.id);
@@ -3970,6 +4077,17 @@ class GameManager {
                 grid.entities[player.id] = { ...playerPos, x: next.x, y: next.y };
                 room.chatLog.push({ type: 'action', playerName: player.name, text: `${player.name} retreats to (${next.x}, ${next.y}).`, timestamp: Date.now() });
                 this._updateFlankingBonuses(room);
+                const qwn = (player.equipment?.weapon?.name || '').toLowerCase();
+                if (qwn.includes('quick blade') && (player._quickBladeAttacks || 0) >= 2 && !player._quickBladeRetreatUsed) {
+                    player._quickBladeRetreatUsed = true;
+                    player.currentAp += 1;
+                    room.chatLog.push({
+                        type: 'system-good',
+                        playerName: player.name,
+                        text: `${player.name} — Quick Blade Fluid Motion: Break Away refunds 1 AP.`,
+                        timestamp: Date.now()
+                    });
+                }
             } else {
                 room.chatLog.push({ type: 'action', playerName: player.name, text: `${player.name} retreats (no space to step).`, timestamp: Date.now() });
             }
