@@ -1,6 +1,6 @@
 # Experimental layout branch (`cursor/ui-desktop-layout-tabs`)
 
-**Version:** v4.4.3 (includes playtest **v4.3.3** shop hardening + **v4.3.1** layout revert + v4.3.0 reconnect/PWA/mobile polish).
+**Version:** v4.4.4 (includes playtest **v4.3.4** [`AUTHORITY-AND-EVENTS.md`](./AUTHORITY-AND-EVENTS.md) + **v4.3.1** layout revert + v4.3.0 reconnect/PWA/mobile polish).
 
 ## Desktop
 

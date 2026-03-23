@@ -1,6 +1,6 @@
 # 🎮 Quest & Chronicle - Multiplayer Tactical Card Game
 
-**Version:** v4.4.3 *(experimental — desktop + mobile layout tabs; branch `cursor/ui-desktop-layout-tabs`; includes playtest v4.3.3 shop hardening)*  
+**Version:** v4.4.4 *(experimental — desktop + mobile layout tabs; branch `cursor/ui-desktop-layout-tabs`; includes playtest v4.3.4 docs + sync reference)*  
 **Status:** Play-Testing Ready ✅  
 **Platform:** Web (PWA) - Works on all devices  
 **Modes:** Online Multiplayer + Offline Solo Play  
@@ -37,7 +37,8 @@ npm test
 - **`tests/qc-dice.test.cjs`** — dice notation and deterministic RNG rolls.
 - **`tests/offline-actions-contract.test.cjs`** — ensures offline event hooks stay wired in `public/offline-actions.js` / `public/client.js`.
 
-Manual playtest checklist: [`docs/PLAYTEST.md`](docs/PLAYTEST.md).
+Manual playtest checklist: [`docs/PLAYTEST.md`](docs/PLAYTEST.md).  
+**Architecture / sync:** [`docs/AUTHORITY-AND-EVENTS.md`](docs/AUTHORITY-AND-EVENTS.md) — who owns game state, pause rules, socket ordering.
 
 ---
 
@@ -406,7 +407,8 @@ Quest-Chronicle/
 │   │   └── tiles/           # Grid tiles
 │   └── sounds/              # Sound effects (optional)
 └── docs/
-    └── (cleaned)
+    ├── PLAYTEST.md              # Manual QA checklist
+    └── AUTHORITY-AND-EVENTS.md  # Server authority, pause, socket events
 ```
 
 ---
@@ -536,11 +538,13 @@ This project is for personal/educational use.
 
 ## 🎯 Version History
 
-- **v4.4.3** (Experimental branch) - Merges playtest **v4.3.3** (shop resume + unified `closeShop`) with v4.4.x layout experiments.
+- **v4.4.4** (Experimental branch) - Merges playtest **v4.3.4** ([`docs/AUTHORITY-AND-EVENTS.md`](docs/AUTHORITY-AND-EVENTS.md)) with v4.4.x layout experiments.
+- **v4.4.3** - Merges playtest **v4.3.3** (shop resume + unified `closeShop`) with v4.4.x layout experiments.
 - **v4.4.2** - Merges playtest **v4.3.2** (multiplayer shop unpause) with v4.4.x layout experiments.
 - **v4.4.1** - Same as **v4.4.0** plus merged **v4.3.1** playtest layout revert (board/hand cards visible): pre-fit desktop column + **fixed** action bar outside main wrapper.
 - **v4.4.0** - Experimental: desktop **View** toolbar; mobile **tab strip** + Journal; prefs `qc_desktop_layout`, `qc_mobile_tab`
-- **v4.3.3** (Playtest) - Shop: exact `resumeGameFromModal` match (no substring `"shop"` vs `"Shopping..."`); Finish shopping emits `closeShop` for all modes; toast fix when still paused after shop.
+- **v4.3.4** (Playtest) - Docs: [`docs/AUTHORITY-AND-EVENTS.md`](docs/AUTHORITY-AND-EVENTS.md) — server authority, pause rules, socket ordering, turn bypasses.
+- **v4.3.3** - Shop: exact `resumeGameFromModal` match; Finish shopping emits `closeShop` for all modes; toast fix when still paused after shop.
 - **v4.3.2** - Multiplayer shop: `markPlayerShopFinished` for `closeShop` / `playerShopComplete`; client resumes when server clears shop.
 - **v4.3.1** - **Revert** desktop viewport-fit / sticky action-bar layout — restores visible board/hand cards; fixed action bar + scrollable game column. Keeps v4.3.0 reconnect/PWA/mobile safe-area fixes.
 - **v4.3.0** - Multiplayer: single `connect` handler (no duplicate `rejoinRoom`); longer reconnect backoff; clear offline bridge on reconnect; guarded desktop log tabs listener. PWA: manifest icons/scope/id, theme & install meta, SW cache bump. Mobile: safe-area insets, tighter panels, toast position.
@@ -615,7 +619,7 @@ This project is for personal/educational use.
 
 ---
 
-**Current Version:** v4.4.3 (experimental UI branch) / **v4.3.3** (playtest)  
+**Current Version:** v4.4.4 (experimental UI branch) / **v4.3.4** (playtest)  
 **Last Updated:** 2026-03-20  
 **Status:** Play-test ready ✅  
 
