@@ -1,6 +1,6 @@
 # 🎮 Quest & Chronicle - Multiplayer Tactical Card Game
 
-**Version:** v4.3.3  
+**Version:** v4.3.4  
 **Status:** Play-Testing Ready ✅  
 **Platform:** Web (PWA) - Works on all devices  
 **Modes:** Online Multiplayer + Offline Solo Play  
@@ -37,7 +37,8 @@ npm test
 - **`tests/qc-dice.test.cjs`** — dice notation and deterministic RNG rolls.
 - **`tests/offline-actions-contract.test.cjs`** — ensures offline event hooks stay wired in `public/offline-actions.js` / `public/client.js`.
 
-Manual playtest checklist: [`docs/PLAYTEST.md`](docs/PLAYTEST.md).
+Manual playtest checklist: [`docs/PLAYTEST.md`](docs/PLAYTEST.md).  
+**Architecture / sync:** [`docs/AUTHORITY-AND-EVENTS.md`](docs/AUTHORITY-AND-EVENTS.md) — who owns game state, pause rules, socket ordering.
 
 ---
 
@@ -406,7 +407,8 @@ Quest-Chronicle/
 │   │   └── tiles/           # Grid tiles
 │   └── sounds/              # Sound effects (optional)
 └── docs/
-    └── (cleaned)
+    ├── PLAYTEST.md              # Manual QA checklist
+    └── AUTHORITY-AND-EVENTS.md  # Server authority, pause, socket events
 ```
 
 ---
@@ -536,7 +538,8 @@ This project is for personal/educational use.
 
 ## 🎯 Version History
 
-- **v4.3.3** (Current) - Shop: `resumeGameFromModal` no longer matches `"Shopping..."` via substring `"shop"` (could unpause server early in MP). Finish shopping always emits `closeShop`. Removed misleading toast when shop closes but game still paused (e.g. level-up).
+- **v4.3.4** (Current) - Docs: [`docs/AUTHORITY-AND-EVENTS.md`](docs/AUTHORITY-AND-EVENTS.md) — server authority, pause rules, socket ordering, turn bypasses (linked from README).
+- **v4.3.3** - Shop: `resumeGameFromModal` no longer matches `"Shopping..."` via substring `"shop"` (could unpause server early in MP). Finish shopping always emits `closeShop`. Removed misleading toast when shop closes but game still paused (e.g. level-up).
 - **v4.3.2** - Multiplayer shop: `playerShopComplete` / `closeShop` share `markPlayerShopFinished`; client resumes modal when server clears shop.
 - **v4.3.1** - **Revert** desktop viewport-fit / sticky action-bar layout (v4.2.7-style) — restores visible board/hand cards; fixed action bar + scrollable game column as before fit experiment. Keeps v4.3.0 reconnect/PWA/mobile safe-area fixes.
 - **v4.3.0** - Multiplayer: single `connect` handler (no duplicate `rejoinRoom`); longer reconnect backoff; clear offline bridge on reconnect; guarded desktop log tabs listener. PWA: manifest icons/scope/id, theme & install meta, SW cache bump. Mobile: safe-area insets, tighter panels, toast position.
@@ -611,7 +614,7 @@ This project is for personal/educational use.
 
 ---
 
-**Current Version:** v4.3.3  
+**Current Version:** v4.3.4  
 **Last Updated:** 2026-03-20  
 **Status:** Play-test ready ✅  
 
