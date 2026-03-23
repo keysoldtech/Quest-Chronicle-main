@@ -1,5 +1,5 @@
 /** Client build label — bump with package.json / README. */
-const QC_VERSION = '4.3.1';
+const QC_VERSION = '4.3.2';
 
 /**
  * Verbose client logs (voice, socket, grid, load game, etc.).
@@ -3982,7 +3982,7 @@ socket.on('gameStateUpdate', (newState) => {
                 }
             } else {
                 modal.classList.add('hidden');
-                // Unpause when shop closes
+                try { NotificationManager.resumeGameFromModal('shop'); } catch (_) {}
                 if (newState?.gameState?.isPaused) {
                     try { NotificationManager.notify('Shop closed', 'info', 1200); } catch (_) {}
                 }
