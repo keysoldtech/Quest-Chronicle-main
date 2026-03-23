@@ -1,5 +1,5 @@
 /** Client build label — bump with package.json / README. */
-const QC_VERSION = '4.4.2';
+const QC_VERSION = '4.4.3';
 
 /**
  * Verbose client logs (voice, socket, grid, load game, etc.).
@@ -3908,20 +3908,17 @@ socket.on('shopOpened', ({ inventory, shopId, isMultiplayer, totalPlayers, playe
         isFinished: false
     };
     
-    // CRITICAL FIX: Different behavior for multiplayer vs single player
+    // Path / trade / room shop: same server handler for solo and multiplayer (`markPlayerShopFinished`).
     get('shop-close-btn').onclick = () => {
         modal.classList.add('hidden');
-        
         if (clientState.shopState.isMultiplayer) {
-            // Multiplayer: Mark as finished but wait for others
             clientState.shopState.isFinished = true;
-            socket.emit('playerShopComplete');
-            updateShopUI();
-        } else {
-            // Single player: Close immediately
-            NotificationManager.resumeGameFromModal('shop');
-            socket.emit('closeShop');
         }
+        try { socket.emit('closeShop'); } catch (_) {}
+        if (!clientState.shopState.isMultiplayer) {
+            try { NotificationManager.resumeGameFromModal('shop'); } catch (_) {}
+        }
+        updateShopUI();
     };
     
     // Pause game when shop opens (only in multiplayer)
@@ -3983,9 +3980,6 @@ socket.on('gameStateUpdate', (newState) => {
             } else {
                 modal.classList.add('hidden');
                 try { NotificationManager.resumeGameFromModal('shop'); } catch (_) {}
-                if (newState?.gameState?.isPaused) {
-                    try { NotificationManager.notify('Shop closed', 'info', 1200); } catch (_) {}
-                }
             }
         }
     } catch (e) {
