@@ -1534,6 +1534,37 @@ class GameManager {
             });
         });
     }
+
+    /**
+     * Mark one player finished shopping; when all real players are done, unpause and clear shop.
+     * Used by both `closeShop` (solo / legacy) and `playerShopComplete` (multiplayer UI).
+     */
+    markPlayerShopFinished(room, player) {
+        if (!room?.gameState?.shop || !player || player.isNpc) return;
+        const states = room.gameState.shopPlayerStates;
+        const realPlayers = Object.values(room.players).filter((p) => !p.isNpc);
+        if (states && realPlayers.length > 0) {
+            if (!states[player.id]) {
+                states[player.id] = { isShopping: false, hasFinished: false };
+            }
+            states[player.id].hasFinished = true;
+            states[player.id].isShopping = false;
+        }
+        const allDone =
+            realPlayers.length > 0 &&
+            realPlayers.every((p) => states?.[p.id]?.hasFinished === true);
+        if (allDone) {
+            room.gameState.isPaused = false;
+            room.gameState.pauseReason = '';
+            room.gameState.shop = null;
+            room.gameState.shopPlayerStates = {};
+            console.log('[ShopClose] All players finished shopping, game resumed');
+        } else {
+            console.log(`[ShopClose] Player ${player.name} finished shopping, waiting for others`);
+        }
+        this.emitGameState(room.id);
+    }
+
     _priceForCard(card) {
         const base = 10;
         const rarity = card.rarityKey || 'common';
@@ -4766,53 +4797,18 @@ io.on('connection', (socket) => {
     socket.on('closeShop', () => {
         const room = gameManager.findRoomBySocket(socket);
         if (!room || !room.gameState.shop) return;
-        
         const player = room.players[socket.id];
         if (!player || player.isNpc) return;
-        
-        // Mark this player as finished shopping
-        if (room.gameState.shopPlayerStates && room.gameState.shopPlayerStates[player.id]) {
-            room.gameState.shopPlayerStates[player.id].hasFinished = true;
-            room.gameState.shopPlayerStates[player.id].isShopping = false;
-        }
-        
-        // Check if all real players are done shopping
-        const realPlayers = Object.values(room.players).filter(p => !p.isNpc);
-        const allPlayersDone = realPlayers.every(p => 
-            room.gameState.shopPlayerStates[p.id]?.hasFinished === true
-        );
-        
-        if (allPlayersDone) {
-            // All players are done, close shop and resume game
-            room.gameState.isPaused = false;
-            room.gameState.pauseReason = '';
-            room.gameState.shop = null;
-            room.gameState.shopPlayerStates = {};
-            console.log(`[ShopClose] All players finished shopping, game resumed`);
-            gameManager.emitGameState(room.id);
-        } else {
-            // Some players still shopping, just update the state
-            console.log(`[ShopClose] Player ${player.name} finished shopping, waiting for others`);
-            gameManager.emitGameState(room.id);
-        }
+        gameManager.markPlayerShopFinished(room, player);
     });
-    
-    // New event for individual player shop completion (for UI updates)
+
+    // Multiplayer: client emits this when clicking "Finish Shopping" (see client shop-close-btn)
     socket.on('playerShopComplete', () => {
         const room = gameManager.findRoomBySocket(socket);
         if (!room || !room.gameState.shop) return;
-        
         const player = room.players[socket.id];
         if (!player || player.isNpc) return;
-        
-        // Mark this player as finished shopping
-        if (room.gameState.shopPlayerStates && room.gameState.shopPlayerStates[player.id]) {
-            room.gameState.shopPlayerStates[player.id].hasFinished = true;
-            room.gameState.shopPlayerStates[player.id].isShopping = false;
-        }
-        
-        // Notify all players about the completion status
-        gameManager.emitGameState(room.id);
+        gameManager.markPlayerShopFinished(room, player);
     });
     
     // Phase 3: room choice selection
