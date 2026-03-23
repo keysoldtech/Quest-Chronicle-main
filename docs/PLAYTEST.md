@@ -1,4 +1,4 @@
-# Playtest checklist (v4.3.6)
+# Playtest checklist (v4.3.7)
 
 Use this for a quick smoke pass before sharing a build.
 
@@ -17,6 +17,7 @@ Use this for a quick smoke pass before sharing a build.
 - [ ] Dice modal: roll resolves without `NaN`; modal dismisses cleanly.
 - [ ] Move on grid: only valid cells highlight; mobile grid button works when phase is `started`.
 - [ ] Dungeon **event** (NPC): choices apply; **trade** opens shop; buy deducts gold; **Finish Shopping** clears pause for everyone (no stuck “Shopping…” / not-your-turn). **rescue** / **investigate** paths behave without console errors.
+- [ ] **Path shop after End Turn (MP):** end your turn → path choice → pick **shop** → finish shopping → next turn should **not** be yours again immediately (turn should advance to the next explorer / DM slot in order).
 - [ ] Blocking modals (e.g. class pick) block “your turn” gating; non-blocking overlays (e.g. combat grid) do not wedge the UI.
 
 ## Offline solo

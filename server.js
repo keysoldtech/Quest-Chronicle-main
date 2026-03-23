@@ -552,6 +552,8 @@ class GameManager {
                 runModifiers: runModifiers || {},
                 nextRooms: [],
                 pathChooserId: null,
+                /** Set when path "shop" room opens — end-turn already ran, so advance turn after MP shop closes. */
+                pendingTurnAfterPathShop: false,
                 lastPathChoiceRound: -999,
                 recentRoomTypes: [],
                 roomsCleared: 0,
@@ -1553,16 +1555,24 @@ class GameManager {
         const allDone =
             realPlayers.length > 0 &&
             realPlayers.every((p) => states?.[p.id]?.hasFinished === true);
+        let advanceTurnAfterPathShop = false;
         if (allDone) {
             room.gameState.isPaused = false;
             room.gameState.pauseReason = '';
             room.gameState.shop = null;
             room.gameState.shopPlayerStates = {};
+            advanceTurnAfterPathShop = room.gameState.pendingTurnAfterPathShop === true;
+            room.gameState.pendingTurnAfterPathShop = false;
             console.log('[ShopClose] All players finished shopping, game resumed');
         } else {
             console.log(`[ShopClose] Player ${player.name} finished shopping, waiting for others`);
         }
         this.emitGameState(room.id);
+        // Path choice after endTurn: turn was never advanced (beginEndOfTurnPhase returned early for path UI).
+        // Without this, currentPlayerIndex still points at the player who ended — they get another turn and skip others.
+        if (advanceTurnAfterPathShop) {
+            this.moveToNextTurn(room);
+        }
     }
 
     _priceForCard(card) {
@@ -4872,6 +4882,7 @@ io.on('connection', (socket) => {
             gameManager.emitGameState(room.id);
             gameManager.moveToNextTurn(room);
         } else if (choice.type === 'shop') {
+            room.gameState.pendingTurnAfterPathShop = true;
             gameManager.openShop(room);
         } else if (choice.type === 'treasure') {
             const chooser = room.players[socket.id];

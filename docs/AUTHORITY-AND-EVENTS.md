@@ -59,7 +59,7 @@ Everything else in the main `switch` is subject to the turn check.
 | `pauseGameForModal` / `resumeGameFromModal` | UI coordination; see §2 for resume matching. |
 | `closeShop` | Player done shopping; drives `markPlayerShopFinished`. |
 | `playerShopComplete` | Legacy alias; same finish logic as `closeShop`. |
-| `chooseNextRoom` | Path picker confirms next room. |
+| `chooseNextRoom` | Path picker confirms next room. **Shop from path:** sets `gameState.pendingTurnAfterPathShop`; when MP shop closes (`markPlayerShopFinished` all done), server calls `moveToNextTurn` once — path choice happens *after* `endTurn` without having advanced the turn pointer yet. |
 | `chatMessage` | Chat. |
 | Voice helpers | `join-voice-chat`, `leave-voice-chat`, `webrtc-signal`. |
 
