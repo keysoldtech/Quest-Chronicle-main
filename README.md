@@ -1,6 +1,6 @@
 # 🎮 Quest & Chronicle - Multiplayer Tactical Card Game
 
-**Version:** v4.3.2  
+**Version:** v4.3.3  
 **Status:** Play-Testing Ready ✅  
 **Platform:** Web (PWA) - Works on all devices  
 **Modes:** Online Multiplayer + Offline Solo Play  
@@ -536,7 +536,8 @@ This project is for personal/educational use.
 
 ## 🎯 Version History
 
-- **v4.3.2** (Current) - Multiplayer shop: `playerShopComplete` now runs same “all done → unpause + clear shop” logic as `closeShop` (was stuck paused / not your turn after Finish Shopping). Client clears shop modal pause when server removes shop.
+- **v4.3.3** (Current) - Shop: `resumeGameFromModal` no longer matches `"Shopping..."` via substring `"shop"` (could unpause server early in MP). Finish shopping always emits `closeShop`. Removed misleading toast when shop closes but game still paused (e.g. level-up).
+- **v4.3.2** - Multiplayer shop: `playerShopComplete` / `closeShop` share `markPlayerShopFinished`; client resumes modal when server clears shop.
 - **v4.3.1** - **Revert** desktop viewport-fit / sticky action-bar layout (v4.2.7-style) — restores visible board/hand cards; fixed action bar + scrollable game column as before fit experiment. Keeps v4.3.0 reconnect/PWA/mobile safe-area fixes.
 - **v4.3.0** - Multiplayer: single `connect` handler (no duplicate `rejoinRoom`); longer reconnect backoff; clear offline bridge on reconnect; guarded desktop log tabs listener. PWA: manifest icons/scope/id, theme & install meta, SW cache bump. Mobile: safe-area insets, tighter panels, toast position.
 - **v4.2.7** - Desktop layout: `#game-screen` viewport lock (no double scroll); flex chain `min-height: 0`; board/hand flex; action bar moved into center column + `position: sticky` (aligns with grid)
@@ -610,7 +611,7 @@ This project is for personal/educational use.
 
 ---
 
-**Current Version:** v4.3.2  
+**Current Version:** v4.3.3  
 **Last Updated:** 2026-03-20  
 **Status:** Play-test ready ✅  
 

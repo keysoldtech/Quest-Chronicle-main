@@ -1537,7 +1537,7 @@ class GameManager {
 
     /**
      * Mark one player finished shopping; when all real players are done, unpause and clear shop.
-     * Used by both `closeShop` (solo / legacy) and `playerShopComplete` (multiplayer UI).
+     * Used by `closeShop` (all paths: path room, NPC trade, solo). Legacy `playerShopComplete` kept as alias.
      */
     markPlayerShopFinished(room, player) {
         if (!room?.gameState?.shop || !player || player.isNpc) return;
@@ -4785,10 +4785,19 @@ io.on('connection', (socket) => {
     
     socket.on('resumeGameFromModal', (data) => {
         const room = gameManager.findRoomBySocket(socket);
-        if (room && room.gameState.isPaused && room.gameState.pauseReason.includes(data.modalType)) {
+        const modalType = typeof data?.modalType === 'string' ? data.modalType : '';
+        // Must match pauseGameForModal exactly — do NOT use .includes(modalType): "Shopping..." contains "shop"
+        // and would wrongly unpause multiplayer shop while the server pause is still active.
+        const expected = modalType ? `Player is in ${modalType} modal` : '';
+        if (
+            room &&
+            room.gameState.isPaused &&
+            modalType &&
+            room.gameState.pauseReason === expected
+        ) {
             room.gameState.isPaused = false;
             room.gameState.pauseReason = '';
-            console.log(`[ModalResume] Game resumed from ${data.modalType} modal`);
+            console.log(`[ModalResume] Game resumed from ${modalType} modal`);
             gameManager.emitGameState(room.id);
         }
     });
@@ -4802,7 +4811,7 @@ io.on('connection', (socket) => {
         gameManager.markPlayerShopFinished(room, player);
     });
 
-    // Multiplayer: client emits this when clicking "Finish Shopping" (see client shop-close-btn)
+    // Legacy alias — prefer `closeShop` from client (same handler)
     socket.on('playerShopComplete', () => {
         const room = gameManager.findRoomBySocket(socket);
         if (!room || !room.gameState.shop) return;
