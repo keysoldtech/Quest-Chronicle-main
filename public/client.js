@@ -1,5 +1,5 @@
 /** Client build label — bump with package.json / README. */
-const QC_VERSION = '4.3.5';
+const QC_VERSION = '4.3.6';
 
 /**
  * Verbose client logs (voice, socket, grid, load game, etc.).
@@ -463,11 +463,6 @@ const NotificationManager = {
     /** True while a toast is visible or items remain queued (normal/important backlog). */
     isQueueDrainPending() {
         return this.queue.length > 0 || this.processing;
-    },
-    /** Drop queued normal + important toasts so turn banner can show without a long backlog. Critical stays. */
-    flushNonCriticalToastQueue() {
-        this.queue = this.queue.filter((item) => item.priority >= NOTIFICATION_PRIORITY.critical);
-        if (!this.processing) this.process();
     }
 };
 
@@ -1295,7 +1290,6 @@ function renderGameplayState(myPlayer, gameState) {
         ) {
             clientState.pendingFirstTurnTutorialToast = true;
         }
-        try { NotificationManager.flushNonCriticalToastQueue(); } catch (_) {}
         scheduleTurnBannerForSession(clientState.turnSessionOrdinal);
     } else if (!canActBase && clientState._prevCanActMyTurn) {
         clientState.pendingTurnBannerSession = null;
