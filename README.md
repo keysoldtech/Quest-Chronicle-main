@@ -1,6 +1,6 @@
 # 🎮 Quest & Chronicle - Multiplayer Tactical Card Game
 
-**Version:** v4.3.4  
+**Version:** v4.3.5  
 **Status:** Play-Testing Ready ✅  
 **Platform:** Web (PWA) - Works on all devices  
 **Modes:** Online Multiplayer + Offline Solo Play  
@@ -538,7 +538,8 @@ This project is for personal/educational use.
 
 ## 🎯 Version History
 
-- **v4.3.4** (Current) - Docs: [`docs/AUTHORITY-AND-EVENTS.md`](docs/AUTHORITY-AND-EVENTS.md) — server authority, pause rules, socket ordering, turn bypasses (linked from README).
+- **v4.3.5** (Current) - Client: actions stay disabled until the **Your Turn** banner has actually appeared; queued combat toasts are flushed at turn start so damage feedback does not block the banner. First-turn tutorial toast runs after the banner (same gate).
+- **v4.3.4** - Docs: [`docs/AUTHORITY-AND-EVENTS.md`](docs/AUTHORITY-AND-EVENTS.md) — server authority, pause rules, socket ordering, turn bypasses (linked from README).
 - **v4.3.3** - Shop: `resumeGameFromModal` no longer matches `"Shopping..."` via substring `"shop"` (could unpause server early in MP). Finish shopping always emits `closeShop`. Removed misleading toast when shop closes but game still paused (e.g. level-up).
 - **v4.3.2** - Multiplayer shop: `playerShopComplete` / `closeShop` share `markPlayerShopFinished`; client resumes modal when server clears shop.
 - **v4.3.1** - **Revert** desktop viewport-fit / sticky action-bar layout (v4.2.7-style) — restores visible board/hand cards; fixed action bar + scrollable game column as before fit experiment. Keeps v4.3.0 reconnect/PWA/mobile safe-area fixes.
@@ -614,7 +615,7 @@ This project is for personal/educational use.
 
 ---
 
-**Current Version:** v4.3.4  
+**Current Version:** v4.3.5  
 **Last Updated:** 2026-03-20  
 **Status:** Play-test ready ✅  
 

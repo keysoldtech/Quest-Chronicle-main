@@ -1,4 +1,4 @@
-# Playtest checklist (v4.3.4)
+# Playtest checklist (v4.3.5)
 
 Use this for a quick smoke pass before sharing a build.
 
@@ -13,6 +13,7 @@ Use this for a quick smoke pass before sharing a build.
 - [ ] Connect two browsers (or incognito + normal), same room.
 - [ ] **Reconnect:** start a run, toggle airplane mode briefly (or kill tab and reopen same origin) → session should **rejoin** without duplicate room spam; toasts not duplicated every second.
 - [ ] Class selection → grid appears, turn order advances.
+- [ ] **Turn + toasts:** after combat log toasts queue up, when your turn begins the **Your Turn** banner appears **before** the action bar enables; you should not act while old damage toasts are still draining (they flush at turn start; banner still waits for an empty queue + visible banner).
 - [ ] Dice modal: roll resolves without `NaN`; modal dismisses cleanly.
 - [ ] Move on grid: only valid cells highlight; mobile grid button works when phase is `started`.
 - [ ] Dungeon **event** (NPC): choices apply; **trade** opens shop; buy deducts gold; **Finish Shopping** clears pause for everyone (no stuck “Shopping…” / not-your-turn). **rescue** / **investigate** paths behave without console errors.

@@ -1,5 +1,5 @@
 /** Client build label — bump with package.json / README. */
-const QC_VERSION = '4.3.4';
+const QC_VERSION = '4.3.5';
 
 /**
  * Verbose client logs (voice, socket, grid, load game, etc.).
@@ -159,7 +159,14 @@ const clientState = {
     hasSeenSkillChallengePrompt: false, // Prevents re-opening the modal
     lastLogLength: 0, // For tracking new log entries for toasts
     activeLegacyClassTab: 'Barbarian', // Default tab for the legacy screen
-    turnPopupReady: false, // Mirrored from game state in renderGameplayState (your turn + not paused)
+    turnPopupReady: false, // Your turn + not paused + "Your Turn" banner has been shown for this turn session
+    /** Increments each time we become able to act on our turn (new "session"); banner must catch up before turnPopupReady. */
+    turnSessionOrdinal: 0,
+    turnBannerAcknowledgedForSession: 0,
+    pendingTurnBannerSession: null,
+    _prevCanActMyTurn: false,
+    pendingFirstTurnTutorialToast: false,
+    hasShownFirstTurnTutorialToast: false,
     selectedLevelUpStat: null,
     hasShownEndTurnPrompt: false,
     toastQueue: [],
@@ -452,6 +459,15 @@ const NotificationManager = {
         const dur = duration;
         this.processing = true;
         setTimeout(finish, dur);
+    },
+    /** True while a toast is visible or items remain queued (normal/important backlog). */
+    isQueueDrainPending() {
+        return this.queue.length > 0 || this.processing;
+    },
+    /** Drop queued normal + important toasts so turn banner can show without a long backlog. Critical stays. */
+    flushNonCriticalToastQueue() {
+        this.queue = this.queue.filter((item) => item.priority >= NOTIFICATION_PRIORITY.critical);
+        if (!this.processing) this.process();
     }
 };
 
@@ -1265,9 +1281,45 @@ function renderClassSelection(desktopContainer, mobileContainer) {
  */
 function renderGameplayState(myPlayer, gameState) {
     const isMyTurn = gameState.turnOrder[gameState.currentPlayerIndex] === myPlayer.id && !myPlayer.isDowned;
-    const canAct = isMyTurn && !gameState.isPaused;
-    // Authoritative: derived from state (not socket timing) — fixes hidden action bar + turn banner desync.
+    const canActBase = isMyTurn && !gameState.isPaused;
+    // New "turn session" when we become able to act; Your Turn banner must show before actions unlock.
+    if (canActBase && !clientState._prevCanActMyTurn) {
+        clientState.turnSessionOrdinal++;
+        clientState.turnBannerAcknowledgedForSession = 0;
+        clientState.pendingTurnBannerSession = null;
+        clientState.hasSeenSkillChallengePrompt = false;
+        if (
+            typeof OfflineActionHandler !== 'undefined' &&
+            OfflineActionHandler.isOffline() &&
+            (gameState.turnCount || 0) <= 1
+        ) {
+            clientState.pendingFirstTurnTutorialToast = true;
+        }
+        try { NotificationManager.flushNonCriticalToastQueue(); } catch (_) {}
+        scheduleTurnBannerForSession(clientState.turnSessionOrdinal);
+    } else if (!canActBase && clientState._prevCanActMyTurn) {
+        clientState.pendingTurnBannerSession = null;
+    }
+    clientState._prevCanActMyTurn = canActBase;
+    const canAct =
+        canActBase && clientState.turnBannerAcknowledgedForSession === clientState.turnSessionOrdinal;
     clientState.turnPopupReady = canAct;
+
+    if (
+        canAct &&
+        clientState.pendingFirstTurnTutorialToast &&
+        !clientState.hasShownFirstTurnTutorialToast &&
+        (gameState.turnCount || 0) <= 1
+    ) {
+        clientState.pendingFirstTurnTutorialToast = false;
+        clientState.hasShownFirstTurnTutorialToast = true;
+        clientState.isFirstTurnTutorialActive = true;
+        showToast(
+            "It's your first turn! Click on a weapon (like 'Unarmed Strike') to select it for an attack.",
+            'info',
+            5000
+        );
+    }
 
     renderPartyHope(gameState.partyHope);
 
@@ -2603,7 +2655,7 @@ function showChatPreview(sender, message) {
     }, 5000);
 }
 
-/** Show YOUR TURN banner (visual only; turnPopupReady is driven by game state in renderGameplayState). */
+/** Show YOUR TURN banner; after it is visible, acknowledge this turn session so actions unlock. */
 function revealYourTurnBanner() {
     const popup = get('your-turn-popup');
     if (!popup) return;
@@ -2613,7 +2665,56 @@ function revealYourTurnBanner() {
     popup.style.zIndex = '10001';
     popup.classList.remove('hidden');
 
+    const session = clientState.pendingTurnBannerSession;
+    if (session != null && session === clientState.turnSessionOrdinal) {
+        clientState.turnBannerAcknowledgedForSession = session;
+        clientState.pendingTurnBannerSession = null;
+        try { renderUI(); } catch (_) {}
+    }
+
     setTimeout(() => popup.classList.add('hidden'), 2500);
+}
+
+/**
+ * After UI is clear and combat toasts have drained, show the Your Turn banner for this session.
+ * If the session is stale (turn already passed), no-op.
+ */
+function scheduleTurnBannerForSession(sessionOrdinal) {
+    if (sessionOrdinal == null) return;
+    const tryShow = () => {
+        const gs = currentRoomState?.gameState;
+        const me = currentRoomState?.players?.[myId];
+        if (!gs || !me) return;
+        const isMyTurn = gs.turnOrder[gs.currentPlayerIndex] === myId && !me.isDowned;
+        const canActBase = isMyTurn && !gs.isPaused;
+        if (!canActBase || sessionOrdinal !== clientState.turnSessionOrdinal) {
+            clientState.pendingTurnBannerSession = null;
+            return;
+        }
+        if (NotificationManager.isGated() || NotificationManager.isQueueDrainPending()) {
+            setTimeout(tryShow, 120);
+            return;
+        }
+        clientState.pendingTurnBannerSession = sessionOrdinal;
+        revealYourTurnBanner();
+    };
+    runWhenUngated(tryShow, {
+        intervalMs: 120,
+        maxWaitMs: UI_GATE_MAX_WAIT_MS,
+        onForcedRun: () => {
+            NotificationManager.notify(
+                'Your turn — the UI was busy; you can act now. Close extra panels if buttons stay disabled.',
+                'warning',
+                7000,
+                { priority: NOTIFICATION_PRIORITY.critical }
+            );
+            if (sessionOrdinal === clientState.turnSessionOrdinal) {
+                clientState.turnBannerAcknowledgedForSession = sessionOrdinal;
+                clientState.pendingTurnBannerSession = null;
+                try { renderUI(); } catch (_) {}
+            }
+        }
+    });
 }
 
 /** Bounded wait for clear UI, then show turn banner (for future callers; turn flow uses revealYourTurnBanner + outer gate). */
@@ -4160,33 +4261,15 @@ socket.on('playerIdentity', ({ playerId, roomId }) => {
 });
 
 socket.on('turnStarted', ({ playerId }) => {
-    // turnPopupReady is set from game state in renderGameplayState (server emits state before turnStarted).
+    // Banner + action unlock are driven by renderGameplayState (turn session + scheduleTurnBannerForSession).
     if (playerId !== myId) {
         return;
     }
-    runWhenUngated(
-        () => {
-            revealYourTurnBanner();
-            clientState.hasSeenSkillChallengePrompt = false;
-            const myPlayer = currentRoomState.players[myId];
-            if (myPlayer && !myPlayer.hasTakenFirstTurn) {
-                clientState.isFirstTurnTutorialActive = true;
-                showToast("It's your first turn! Click on a weapon (like 'Unarmed Strike') to select it for an attack.", "info", 5000);
-            }
-        },
-        {
-            intervalMs: 200,
-            maxWaitMs: UI_GATE_MAX_WAIT_MS,
-            onForcedRun: () => {
-                NotificationManager.notify(
-                    'Your turn — the UI was busy; you can act now. Close extra panels if buttons stay disabled.',
-                    'warning',
-                    7000,
-                    { priority: NOTIFICATION_PRIORITY.critical }
-                );
-            }
-        }
-    );
+    clientState.hasSeenSkillChallengePrompt = false;
+    const gs = currentRoomState?.gameState;
+    if (gs && (gs.turnCount || 0) <= 1) {
+        clientState.pendingFirstTurnTutorialToast = true;
+    }
 });
 
 socket.on('actionError', (message) => {
