@@ -1139,10 +1139,47 @@ html.qc-game-active {
 #game-board-container, #hand-equipment-container {
     flex-shrink: 0;
 }
-/* Desktop: main column scrolls as one unit; board uses remaining height, cards scroll inside */
+/* Desktop: prioritize board + hand; combat grid stays compact at top */
+.game-area-desktop #combat-grid-container:not(.hidden) {
+    flex: 0 1 auto !important;
+    max-height: min(42vh, 320px) !important;
+    overflow: auto !important;
+    margin-bottom: 0.35rem !important;
+}
+.game-area-desktop .combat-grid-panel {
+    margin-bottom: 0.25rem;
+}
+.game-area-desktop #combat-grid-container .combat-grid {
+    max-width: min(260px, 32vw) !important;
+    width: min(260px, 32vw);
+    max-height: min(260px, 32vw) !important;
+    padding: 0.35rem;
+    margin: 0 auto;
+}
+.game-area-desktop #combat-grid-container .grid-cell {
+    min-height: 0 !important;
+    min-width: 0;
+    aspect-ratio: 1;
+}
+.game-area-desktop #combat-grid-container .pixel-sprite,
+.game-area-desktop #combat-grid-container .grid-sprite {
+    width: 28px;
+    height: 28px;
+}
+.game-area-desktop #combat-grid-container .grid-hint {
+    font-size: 0.72rem !important;
+    line-height: 1.25;
+    margin: 0.2rem 0.35rem 0 !important;
+}
+.game-area-desktop #combat-grid-container .grid-legend {
+    font-size: 0.7rem;
+    padding: 0.15rem 0.35rem 0.35rem;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
 .game-area-desktop #game-board-container {
-    flex: 1 1 0;
-    min-height: 120px;
+    flex: 3 1 0;
+    min-height: 180px;
     overflow: hidden;
 }
 .game-area-desktop #game-board-container .card-container-row {
@@ -1153,9 +1190,9 @@ html.qc-game-active {
     -webkit-overflow-scrolling: touch;
 }
 .game-area-desktop #hand-equipment-container {
-    flex: 0 1 auto;
-    max-height: min(48vh, 420px);
-    min-height: 0;
+    flex: 2 1 0;
+    min-height: 200px;
+    max-height: none;
     overflow: hidden;
 }
 .game-area-desktop #hand-equipment-container .hand-and-equipped-container {
@@ -1483,12 +1520,12 @@ html.qc-game-active {
     width: 100%;
     z-index: 5;
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     justify-content: flex-start;
-    align-content: flex-start;
-    gap: 0.5rem;
-    padding: 0.5rem 0.65rem;
-    margin-top: 0.25rem;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.45rem;
+    margin-top: 0.2rem;
     background-color: var(--color-surface);
     border-radius: 8px;
     border: 2px solid var(--color-border);
@@ -1496,6 +1533,14 @@ html.qc-game-active {
     overflow-x: auto;
     overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
+}
+.game-area-desktop .desktop-action-bar .btn {
+    padding: 0.4rem 0.55rem;
+    font-size: 0.78rem;
+    flex-shrink: 0;
+}
+.game-area-desktop .desktop-action-bar .btn-primary {
+    margin-left: auto;
 }
 
 .desktop-action-bar::-webkit-scrollbar {

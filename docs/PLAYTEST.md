@@ -1,4 +1,4 @@
-# Playtest checklist (v4.3.11)
+# Playtest checklist (v4.3.12)
 
 Use this for a quick smoke pass before sharing a build.
 
@@ -32,10 +32,11 @@ Use this for a quick smoke pass before sharing a build.
 - [ ] End turn / turn banner after long modal sessions (no infinite “waiting”).
 - [ ] Grid sprites: broken images fall back to emoji where implemented.
 
-## Layout (v4.3.11)
+## Layout (v4.3.11+)
 
 - [ ] **Full window:** On the game screen, the **page** does not scroll (only panels: board, hand, side columns, log).
 - [ ] **Resize:** Shrink window height below ~720px at desktop width → **bottom tab bar** appears (mobile-style); widen/tall again → 3-column desktop returns.
+- [ ] **v4.3.12 desktop:** **Game board** and **hand** are the main vertical space; **combat grid** stays compact at top; **action bar** is one horizontal strip (scroll if needed).
 
 ## Card / combat (v4.3.10)
 
