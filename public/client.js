@@ -1,5 +1,5 @@
 /** Client build label — bump with package.json / README. */
-const QC_VERSION = '4.3.9';
+const QC_VERSION = '4.3.10';
 
 /**
  * Verbose client logs (voice, socket, grid, load game, etc.).
@@ -5902,6 +5902,12 @@ function showPlayerAvatar(playerId) {
         const equipment = player.equipment || {};
         const hand = player.hand || [];
         const statusEffects = player.statusEffects || [];
+        const gs = currentRoomState.gameState || {};
+        const isMyTurnNow =
+            gs.turnOrder &&
+            gs.turnOrder[gs.currentPlayerIndex] === myId &&
+            !gs.isPaused;
+        const isViewingSelf = playerId === myId;
         
         // Status effects display
         let statusHTML = '';
@@ -5915,6 +5921,24 @@ function showPlayerAvatar(playerId) {
             </div>`;
         }
         
+        const wyrmOpts = ['fire', 'cold', 'lightning', 'acid', 'thunder'];
+        const wyrmVal = player.wyrmscaleImmunityType || 'fire';
+        const wyrmscalePick =
+            equipment.armor?.name === 'Wyrmscale Mail'
+                ? isViewingSelf && isMyTurnNow
+                    ? `<select class="wyrmscale-select" aria-label="Wyrmscale element immunity">
+                        ${wyrmOpts.map((e) => `<option value="${e}" ${wyrmVal === e ? 'selected' : ''}>${e}</option>`).join('')}
+                       </select>`
+                    : `<span class="equip-value">${wyrmVal}</span>${isViewingSelf && !isMyTurnNow ? ' <span class="muted">(change on your turn)</span>' : ''}`
+                : '';
+        const wyrmscaleRow =
+            equipment.armor?.name === 'Wyrmscale Mail'
+                ? `<div class="equip-slot wyrmscale-row">
+                    <span class="equip-label">Wyrmscale immunity:</span>
+                    ${wyrmscalePick}
+                   </div>`
+                : '';
+
         // Equipment display
         const equipHTML = `
             <div class="avatar-equipment">
@@ -5928,6 +5952,7 @@ function showPlayerAvatar(playerId) {
                         <span class="equip-label">Armor:</span>
                         <span class="equip-value">${equipment.armor?.name || 'None'}</span>
                     </div>
+                    ${wyrmscaleRow}
                     <div class="equip-slot">
                         <span class="equip-label">Accessory:</span>
                         <span class="equip-value">${equipment.accessory?.name || 'None'}</span>
@@ -6032,6 +6057,13 @@ function showPlayerAvatar(playerId) {
         const closeBtn = modalContent.querySelector('.modal-close-btn');
         if (closeBtn) {
             closeBtn.addEventListener('click', () => modal.classList.add('hidden'));
+        }
+
+        const wyrmSel = modalContent.querySelector('.wyrmscale-select');
+        if (wyrmSel && socket && socket.connected && isViewingSelf) {
+            wyrmSel.addEventListener('change', (e) => {
+                socket.emit('playerAction', { action: 'setWyrmscaleImmunity', element: e.target.value });
+            });
         }
         
         modal.classList.remove('hidden');

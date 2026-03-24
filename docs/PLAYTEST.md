@@ -1,4 +1,4 @@
-# Playtest checklist (v4.3.9)
+# Playtest checklist (v4.3.10)
 
 Use this for a quick smoke pass before sharing a build.
 
@@ -31,3 +31,10 @@ Use this for a quick smoke pass before sharing a build.
 
 - [ ] End turn / turn banner after long modal sessions (no infinite “waiting”).
 - [ ] Grid sprites: broken images fall back to emoji where implemented.
+
+## Card / combat (v4.3.10)
+
+- [ ] **Wyrmscale Mail:** equip → log mentions Fire default; open **View avatar** (self) on your turn → **Wyrmscale immunity** dropdown changes element; incoming spell of that type should deal **0** to HP (after shield).
+- [ ] **Spellward / Sylvan:** cast a single-target **fire/cold/lightning/acid** damage spell on a geared ally — half damage on failed save uses DEX; WIS half uses **Spellward +1**; **Sylvan** can roll DEX with advantage for those saves.
+- [ ] **Lich Apprentice:** on a melee hit, combat log shows a **random level 1** spell name and extra damage/status may apply.
+- [ ] **Life Transfer** (level 3 Cleric): caster takes **4d8 necrotic** (Spiritweave halves if equipped), target heals **2×** that roll.

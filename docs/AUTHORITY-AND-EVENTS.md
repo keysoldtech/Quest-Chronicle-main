@@ -13,7 +13,7 @@ For manual QA, see [`PLAYTEST.md`](./PLAYTEST.md).
 | **`server.js` → `GameManager`** | Authoritative game rules, combat, loot, turns, shops, dungeon events. Mutates `room` / `room.gameState` / `room.players`. |
 | **`emitGameState(roomId)`** | The **only** broadcast of full room snapshot. Emits **`gameStateUpdate`** to everyone in the room (includes `staticData` for classes). |
 | **`public/client.js`** | Treats **`gameStateUpdate`** as truth: assigns `currentRoomState` and drives UI. **Do not** assume combat/turn/gold state from older socket events alone. **Turn UX:** `turnPopupReady` (action bar / click gating) only becomes true after the **Your Turn** overlay has been shown for the current turn session, **after** the toast queue has drained (no skipping queued combat toasts). **Toasts:** most combat/action lines stay in the **chat log** only; only a few high-signal types toast for *other* players (e.g. `dm`, `system-good`). |
-| **Card specials** | Many weapon/armor lines are implemented in **`server.js`** (`_applyWeaponDamageModifiers`, `_applyDamage`, `resolveAttackRoll`, `resolveDodge`, `resolveRetreat`, `_resolveDiceSequence`). New status: **`Steady Aim`** (Bolt Sprinter + Dodge) — extra `1d4` on next weapon attack via `consumesOn: 'attack'`. |
+| **Card specials** | Many weapon/armor lines are implemented in **`server.js`** (`_applyWeaponDamageModifiers`, `_applyDamage`, `resolveAttackRoll`, `resolveDodge`, `resolveRetreat`, `_resolveDiceSequence`, `resolveAOESpell`, `resolveCastSpell`, `resolveSkillCheckRoll`, `resolveMove`). Spell cards use optional **`effect.damageType`** for resistances. **Wyrmscale Mail:** `player.wyrmscaleImmunityType` + `playerAction` **`setWyrmscaleImmunity`** (your turn only). **Lich Apprentice:** `_lichRandomSpellOnHit` on successful melee hit. |
 | **`public/offline-*.js`** | Mirrors server behavior for solo offline; not authoritative online. |
 
 ---
@@ -62,6 +62,7 @@ Everything else in the main `switch` is subject to the turn check.
 | `closeShop` | Player done shopping; drives `markPlayerShopFinished`. |
 | `playerShopComplete` | Legacy alias; same finish logic as `closeShop`. |
 | `chooseNextRoom` | Path picker confirms next room. **Shop from path:** sets `gameState.pendingTurnAfterPathShop`; when MP shop closes (`markPlayerShopFinished` all done), server calls `moveToNextTurn` once — path choice happens *after* `endTurn` without having advanced the turn pointer yet. |
+| `playerAction` → `setWyrmscaleImmunity` | `{ element: 'fire'|'cold'|'lightning'|'acid'|'thunder' }` — only on **your turn**, only while **Wyrmscale Mail** is equipped. |
 | `chatMessage` | Chat. |
 | Voice helpers | `join-voice-chat`, `leave-voice-chat`, `webrtc-signal`. |
 

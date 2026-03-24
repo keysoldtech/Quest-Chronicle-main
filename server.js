@@ -1151,6 +1151,15 @@ class GameManager {
             this._giveCardToPlayer(room, player, currentlyEquipped);
         }
 
+        if (cardToEquip.name === 'Wyrmscale Mail' && !player.wyrmscaleImmunityType) {
+            player.wyrmscaleImmunityType = 'fire';
+            room.chatLog.push({
+                type: 'system',
+                text: `${player.name}'s Wyrmscale Mail attunes to Fire immunity (change with armor action if needed).`,
+                timestamp: Date.now()
+            });
+        }
+
         player.stats = this.calculatePlayerStats(player, room.gameState.partyHope);
         room.chatLog.push({
             type: 'action-good',
@@ -2645,6 +2654,77 @@ class GameManager {
         return null; // Grid is full!
     }
     
+    _inferSpellDamageType(effect) {
+        if (effect?.damageType) return String(effect.damageType).toLowerCase();
+        const d = (effect?.description || '').toLowerCase();
+        if (d.includes('fire') || d.includes('flame') || d.includes('inferno')) return 'fire';
+        if (d.includes('cold') || d.includes('frost') || d.includes('ice')) return 'cold';
+        if (d.includes('thunder') && !d.includes('lightning')) return 'thunder';
+        if (d.includes('lightning') || d.includes('shock')) return 'lightning';
+        if (d.includes('acid')) return 'acid';
+        if (d.includes('poison') || d.includes('toxic')) return 'poison';
+        if (d.includes('necrotic')) return 'necrotic';
+        if (d.includes('radiant')) return 'radiant';
+        if (d.includes('force')) return 'force';
+        return '';
+    }
+
+    _applyPlayerArmorDamageReduction(target, dmg, meta) {
+        const t = meta.damageType || '';
+        const an = target.equipment?.armor?.name || '';
+        if (t === 'fire' && an === 'Wyrmscale Mail' && target.wyrmscaleImmunityType === 'fire' && dmg > 0) {
+            return { dmg: 0, note: 'Wyrmscale Mail — immunity to Fire.' };
+        }
+        if (t === 'necrotic' && an === "Spiritweave Robes" && dmg > 0) {
+            return { dmg: Math.floor(dmg * 0.5), note: "Spiritweave Robes — resist Necrotic (-50%)." };
+        }
+        if (t === 'piercing' && an === 'Toughened Hides' && dmg > 0) {
+            return { dmg: Math.floor(dmg * 0.5), note: 'Toughened Hides — resist Piercing (-50%).' };
+        }
+        if (t === 'bludgeoning' && an === 'Earth-Forged Mail' && dmg > 0) {
+            return { dmg: Math.floor(dmg * 0.5), note: 'Earth-Forged Mail — resist Bludgeoning (-50%).' };
+        }
+        return { dmg, note: '' };
+    }
+
+    _bastionCoverBonus(room, defender, monsterId) {
+        const grid = room.gameState.grid;
+        if (!grid?.entities || !monsterId) return 0;
+        const mp = grid.entities[monsterId];
+        const dp = grid.entities[defender.id];
+        if (!mp || !dp) return 0;
+        const dist = (a, b) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+        const explorers = Object.values(room.players).filter((p) => p.role === 'Explorer' && !p.isNpc && p.id !== defender.id && p.equipment?.armor?.name === 'Bastion Shield');
+        for (const ally of explorers) {
+            const ap = grid.entities[ally.id];
+            if (!ap) continue;
+            if (dist(ap, mp) <= 1 && dist(ap, dp) <= 1) return 1;
+        }
+        return 0;
+    }
+
+    _lichRandomSpellOnHit(room, lich, targetPlayer) {
+        const pool = gameData.spellCards.filter(
+            (s) => s.level === 1 && s.effect?.type === 'damage' && s.effect?.target === 'any-monster'
+        );
+        if (pool.length === 0) return;
+        const card = pool[Math.floor(nextDailyRandom(room, 'lich-spell') * pool.length)];
+        const eff = card.effect;
+        const rolled = this.rollDiceWithDetails(eff.dice);
+        const spellPow = lich.stats?.int || 0;
+        const total = rolled.total + spellPow;
+        const dtype = this._inferSpellDamageType(eff);
+        room.chatLog.push({
+            type: 'combat',
+            text: `${lich.name} channels ${card.name}! (${dtype || 'arcane'} surge)`,
+            timestamp: Date.now()
+        });
+        this._applyDamage(room, targetPlayer, total, { id: lich.id, name: lich.name }, { damageType: dtype });
+        if (eff.status && targetPlayer.class) {
+            this._applyStatusEffect(room, targetPlayer, eff.status, eff.duration || 2);
+        }
+    }
+
     // --- 3.7. Action Resolution ---
     _applyDamage(room, target, damage, sourceAttacker, meta = {}) {
         let logParts = [];
@@ -2659,9 +2739,11 @@ class GameManager {
                 dmg = Math.max(0, dmg - 1);
                 logParts.push(`Indomitable Plating ignores 1 damage.`);
             }
-            if (fromMonsterHit && target.equipment?.armor?.name === 'Crystal Hide' && dmg > 0) {
+            const phys = new Set(['piercing', 'slashing', 'bludgeoning']);
+            const isNonMagicalHit = fromMonsterHit && (!meta.damageType || phys.has(meta.damageType));
+            if (isNonMagicalHit && target.equipment?.armor?.name === 'Crystal Hide' && dmg > 0) {
                 dmg = Math.floor(dmg * 0.85);
-                logParts.push(`Crystal Hide softens the blow (-15%).`);
+                logParts.push(`Crystal Hide softens non-magical blows (-15%).`);
             }
             if (fromMonsterHit && target.equipment?.armor?.name === 'Phase Shroud' && dmg > 0 && !target._phaseShroudUsedThisTurn) {
                 const r = this.rollDie('d20');
@@ -2682,6 +2764,15 @@ class GameManager {
                 });
                 dmg = reduced;
             }
+            const magTypes = new Set(['fire', 'cold', 'lightning', 'thunder', 'acid', 'poison', 'necrotic', 'radiant', 'force']);
+            if (isPlayer && magTypes.has(meta.damageType) && target.equipment?.armor?.name === "Arcanist's Weave" && dmg > 0) {
+                dmg = Math.max(0, dmg - 1);
+                logParts.push(`Arcanist's Weave dulls magical harm (-1).`);
+            }
+            const armRed = this._applyPlayerArmorDamageReduction(target, dmg, meta);
+            if (armRed.note) logParts.push(armRed.note);
+            dmg = armRed.dmg;
+
             const damageAfterShield = dmg - (target.stats.shieldHp || 0);
             if (damageAfterShield <= 0) {
                 target.stats.shieldHp -= damage;
@@ -2983,6 +3074,29 @@ class GameManager {
                 case 'intimidate': this.resolveIntimidate(room, player, payload.targetId); break;
                 case 'persuade': this.resolvePersuade(room, player, payload.targetId); break;
                 case 'move': this.resolveMove(room, player, payload.targetX, payload.targetY, payload.movementCost); break;
+                case 'setWyrmscaleImmunity': {
+                    const curId = room.gameState.turnOrder[room.gameState.currentPlayerIndex];
+                    if (player.id !== curId) {
+                        const sock = io.sockets.sockets.get(player.id);
+                        if (sock) sock.emit('actionError', 'You can only change Wyrmscale immunity on your turn.');
+                        break;
+                    }
+                    if (player.equipment?.armor?.name === 'Wyrmscale Mail' && typeof payload.element === 'string') {
+                        const allowed = new Set(['fire', 'cold', 'lightning', 'acid', 'thunder']);
+                        const el = String(payload.element).toLowerCase();
+                        if (allowed.has(el)) {
+                            player.wyrmscaleImmunityType = el;
+                            room.chatLog.push({
+                                type: 'system-good',
+                                playerName: player.name,
+                                text: `${player.name}'s Wyrmscale Mail now wards against ${el} damage.`,
+                                timestamp: Date.now()
+                            });
+                            this.emitGameState(room.id);
+                        }
+                    }
+                    break;
+                }
                 case 'selectSpecialization':
                     break;
                 case 'useAbility':
@@ -3114,7 +3228,8 @@ class GameManager {
         const isPlayerTarget = !!target.class;
     
         const attackBonus = attacker.attackBonus ?? attacker.stats.hitBonus;
-        const targetAC = isPlayerTarget ? (target.stats.shieldBonus + 10) : target.requiredRollToHit;
+        let targetAC = isPlayerTarget ? (target.stats.shieldBonus + 10) : target.requiredRollToHit;
+        if (isPlayerTarget) targetAC += this._bastionCoverBonus(room, target, attacker.id);
     
         io.to(room.id).emit('promptAttackRoll', {
             rollerId: 'npc-dm', // The DM is the one rolling for the monster/npc
@@ -3146,12 +3261,16 @@ class GameManager {
                     const damageDetails = this.rollDiceWithDetails(weaponCard.effect.dice);
                     const attackerDamageBonus = !attacker.attackBonus ? (attacker.stats?.damageBonus || 0) : 0;
                     const totalDamage = damageDetails.total + attackerDamageBonus;
+                    const mdType = weaponCard.effect?.damageType || 'slashing';
 
-                    const { wasDefeated, logParts } = this._applyDamage(room, target, totalDamage, { id: attacker.id, name: attacker.name }, { isCrit: roll === 20 });
+                    const { wasDefeated, logParts } = this._applyDamage(room, target, totalDamage, { id: attacker.id, name: attacker.name }, { isCrit: roll === 20, damageType: mdType });
                     let logText = `${attacker.name} deals ${totalDamage} damage to ${target.name}! ${logParts.join(' ')}`;
                     room.chatLog.push({ type: 'combat-hit', rollerName: attacker.name, text: logText, timestamp: Date.now() });
                     if (isPlayerTarget) {
                         this._applyMonsterHitSpecials(room, attacker, target, weaponCard);
+                        if (attacker.name === 'Lich Apprentice') {
+                            this._lichRandomSpellOnHit(room, attacker, target);
+                        }
                     }
                     
                     const damageResolvedPayload = {
@@ -3176,7 +3295,8 @@ class GameManager {
         console.log(`[ResolveAttackAndWait] ${attacker.name} attacking ${target.name}`);
         const isPlayerTarget = !!target.class;
         const attackBonus = attacker.attackBonus ?? attacker.stats.hitBonus;
-        const targetAC = isPlayerTarget ? (target.stats.shieldBonus + 10) : target.requiredRollToHit;
+        let targetAC = isPlayerTarget ? (target.stats.shieldBonus + 10) : target.requiredRollToHit;
+        if (isPlayerTarget) targetAC += this._bastionCoverBonus(room, target, attacker.id);
     
         io.to(room.id).emit('promptAttackRoll', {
             rollerId: 'npc-dm',
@@ -3208,12 +3328,16 @@ class GameManager {
                     const damageDetails = this.rollDiceWithDetails(weaponCard.effect.dice);
                     const attackerDamageBonus = !attacker.attackBonus ? (attacker.stats?.damageBonus || 0) : 0;
                     const totalDamage = damageDetails.total + attackerDamageBonus;
+                    const mdType = weaponCard.effect?.damageType || 'slashing';
 
-                    const { wasDefeated, logParts } = this._applyDamage(room, target, totalDamage, { id: attacker.id, name: attacker.name }, { isCrit: roll === 20 });
+                    const { wasDefeated, logParts } = this._applyDamage(room, target, totalDamage, { id: attacker.id, name: attacker.name }, { isCrit: roll === 20, damageType: mdType });
                     let logText = `${attacker.name} deals ${totalDamage} damage to ${target.name}! ${logParts.join(' ')}`;
                     room.chatLog.push({ type: 'combat-hit', rollerName: attacker.name, text: logText, timestamp: Date.now() });
                     if (isPlayerTarget) {
                         this._applyMonsterHitSpecials(room, attacker, target, weaponCard);
+                        if (attacker.name === 'Lich Apprentice') {
+                            this._lichRandomSpellOnHit(room, attacker, target);
+                        }
                     }
                     
                     const damageResolvedPayload = {
@@ -3316,6 +3440,7 @@ class GameManager {
                 }
             }
             let targetAC = target.requiredRollToHit;
+            targetAC += this._bastionCoverBonus(room, attacker, target.id);
             if (wnameLower.includes('farstrike bow') && !attacker._farstrikePiercingUsed) {
                 targetAC = Math.max(1, targetAC - 1);
                 attacker._farstrikePiercingUsed = true;
@@ -3352,6 +3477,7 @@ class GameManager {
                 const mod = this._applyWeaponDamageModifiers(room, attacker, weapon, target, combinedDice, baseStatic);
                 const parsed2 = this.parseDiceString(mod.dice);
 
+                const wDmgType = (weapon.effect?.damageType || (weapon.name?.toLowerCase().includes('staff') ? 'bludgeoning' : '')) || 'slashing';
                 attacker.pendingAction = { 
                     actionType: 'damageRoll',
                     weaponId, 
@@ -3363,6 +3489,7 @@ class GameManager {
                     staticBonus: mod.staticBonus,
                     totalDice: parsed2.dice.length,
                     title: weapon.name,
+                    damageType: wDmgType,
                     sourceAttacker: { id: attacker.id, name: attacker.name, isPlayer: true }
                 };
 
@@ -3476,6 +3603,23 @@ class GameManager {
         if (card.effect.target === 'aoe' || card.effect.target === 'multi-monster') {
             return this.resolveAOESpell(room, player, card);
         }
+
+        if (card.name === 'Life Transfer' && target && player.currentAp >= (card.apCost || 3)) {
+            player.currentAp -= card.apCost || 3;
+            const nec = this.rollDiceWithDetails('4d8').total;
+            this._applyDamage(room, player, nec, { name: 'Life Transfer' }, { damageType: 'necrotic' });
+            const healAmt = nec * 2;
+            target.stats.currentHp = Math.min(target.stats.maxHp, (target.stats.currentHp || 0) + healAmt);
+            room.chatLog.push({
+                type: 'action-good',
+                playerName: player.name,
+                text: `${player.name} casts Life Transfer, taking ${nec} necrotic damage and healing ${target.name} for ${healAmt} HP.`,
+                timestamp: Date.now()
+            });
+            player.hand = player.hand.filter((c) => c.id !== card.id);
+            this.emitGameState(room.id);
+            return;
+        }
         
         if (player.currentAp < (card.apCost || 1)) {
             // CRITICAL FIX: Send specific AP error for spell
@@ -3498,7 +3642,10 @@ class GameManager {
             const parsed = this.parseDiceString(effect.dice);
             let staticBonus = parsed.bonus;
             if (effect.type === 'heal') staticBonus += player.stats.healingPower;
-            if (effect.type === 'damage') staticBonus += player.stats.spellPower;
+            if (effect.type === 'damage') {
+                staticBonus += player.stats.spellPower;
+                if (player.equipment?.armor?.name === "Arcanist's Weave") staticBonus += 1;
+            }
 
             player.pendingAction = {
                 actionType: 'cardEffectRoll',
@@ -3602,7 +3749,8 @@ class GameManager {
                 return;
             }
             
-            const { wasDefeated, logParts } = this._applyDamage(room, target, totalValue, sourceAttacker);
+            const dmgMeta = { damageType: pa.damageType || 'slashing' };
+            const { wasDefeated, logParts } = this._applyDamage(room, target, totalValue, sourceAttacker, dmgMeta);
             let logText = `${sourceAttacker.name} deals ${totalValue} damage to ${target.name}! ${logParts.join(' ')}`;
             
             room.chatLog.push({ type: 'combat-hit', rollerName: sourceAttacker.name, rollerId: sourceAttacker.id, text: logText, timestamp: Date.now() });
@@ -3627,8 +3775,9 @@ class GameManager {
                 let targetsHit = 0;
                 let defeatedMonsters = [];
     
+                const spellDtype = this._inferSpellDamageType(effect);
                 monsters.forEach(monster => {
-                    const { wasDefeated } = this._applyDamage(room, monster, totalValue, sourceAttacker);
+                    const { wasDefeated } = this._applyDamage(room, monster, totalValue, sourceAttacker, { damageType: spellDtype });
                     targetsHit++;
                     if (wasDefeated) {
                         defeatedMonsters.push(monster.name);
@@ -3660,9 +3809,30 @@ class GameManager {
                     target.stats.currentHp = Math.min(target.stats.maxHp, target.stats.currentHp + totalValue);
                     logText = `${sourceAttacker.name} uses ${effectSource.name} to heal ${target.name} for ${totalValue} HP!`;
                 } else if (effectType === 'damage') {
-                    const result = this._applyDamage(room, target, totalValue, sourceAttacker);
+                    let dmgVal = totalValue;
+                    if (target.class) {
+                        const dc = 13;
+                        const isDex = ['acid', 'fire', 'lightning', 'cold'].includes(this._inferSpellDamageType(effect));
+                        let saveRoll = this.rollDie('d20');
+                        if (target.equipment?.armor?.name === 'Sylvan Shroud' && isDex) {
+                            saveRoll = Math.max(saveRoll, this.rollDie('d20'));
+                        }
+                        const saveStat = isDex ? (target.stats?.dex || 0) : (target.stats?.wis || 0);
+                        let saveBonus = saveStat;
+                        if (target.equipment?.armor?.name === 'Spellward Plate') saveBonus += 1;
+                        const saved = saveRoll + saveBonus >= dc;
+                        if (saved) {
+                            dmgVal = Math.floor(dmgVal / 2);
+                            room.chatLog.push({
+                                type: 'action',
+                                text: `${target.name} partially resists ${effectSource.name} (${saveRoll}+${saveBonus} vs DC ${dc}) — half damage.`,
+                                timestamp: Date.now()
+                            });
+                        }
+                    }
+                    const result = this._applyDamage(room, target, dmgVal, sourceAttacker, { damageType: this._inferSpellDamageType(effect) });
                     wasDefeated = result.wasDefeated;
-                    logText = `${sourceAttacker.name}'s ${effectSource.name} deals ${totalValue} damage to ${target.name}! ${result.logParts.join(' ')}`;
+                    logText = `${sourceAttacker.name}'s ${effectSource.name} deals ${dmgVal} damage to ${target.name}! ${result.logParts.join(' ')}`;
                 }
                 room.chatLog.push({ type: 'action-good', rollerName: sourceAttacker.name, rollerId: sourceAttacker.id, text: logText, timestamp: Date.now() });
                 io.to(room.id).emit('cardEffectRollResolved', { rollerId: player.id, rollerName: sourceAttacker.name, rolls: pa.rolls, rollValue: totalRollValue, bonus: pa.staticBonus, totalValue, effectType, cardName: effectSource.name, targetName: target.name, wasDefeated });
@@ -3722,11 +3892,14 @@ class GameManager {
         if (effect.dice && effect.type === 'damage') {
             let totalDamage = 0;
             let defeatedCount = 0;
+            const spellDtype = this._inferSpellDamageType(effect);
+            let spellBonus = player.stats.spellPower || 0;
+            if (player.equipment?.armor?.name === "Arcanist's Weave") spellBonus += 1;
             monsters.forEach(monster => {
                 const damageRoll = this.rollDiceWithDetails(effect.dice);
-                const damage = damageRoll.total;
+                const damage = damageRoll.total + spellBonus;
                 totalDamage += damage;
-                const { wasDefeated } = this._applyDamage(room, monster, damage, player);
+                const { wasDefeated } = this._applyDamage(room, monster, damage, player, { damageType: spellDtype });
                 if (wasDefeated) {
                     defeatedCount++;
                     this._addXpToPlayer(room, player, monster.xpValue || 10);
@@ -3770,12 +3943,14 @@ class GameManager {
             return;
         }
         player.currentAp -= gameData.actionCosts.guard;
-        player.stats.shieldHp += player.stats.shieldBonus;
+        let shieldGain = player.stats.shieldBonus;
+        if (player.equipment?.armor?.name === 'Round Shield') shieldGain += 1;
+        player.stats.shieldHp += shieldGain;
         
         // Check for synergies
         this._checkForSynergies(room, player, 'guard');
         
-        room.chatLog.push({ type: 'action', playerName: player.name, text: `${player.name} takes a guarded stance, gaining ${player.stats.shieldBonus} Shield HP.`, timestamp: Date.now() });
+        room.chatLog.push({ type: 'action', playerName: player.name, text: `${player.name} takes a guarded stance, gaining ${shieldGain} Shield HP.`, timestamp: Date.now() });
         this.emitGameState(room.id);
     }
 
@@ -4180,6 +4355,12 @@ class GameManager {
         if (player.movementPoints < movementCost) {
             const playerSocket = io.sockets.sockets.get(player.id);
             if (playerSocket) playerSocket.emit('actionError', 'Not enough movement points.');
+            return;
+        }
+
+        if (player.equipment?.armor?.name === 'Ironclad Harness' && movementCost > 1) {
+            const playerSocket = io.sockets.sockets.get(player.id);
+            if (playerSocket) playerSocket.emit('actionError', 'Ironclad Harness: heavy armor limits you to 1 tile per move.');
             return;
         }
         
@@ -4774,7 +4955,10 @@ class GameManager {
             const roll2 = payload.hasAdvantage ? this.rollDie('d20') : roll1;
             const roll = Math.max(roll1, roll2);
 
-            const bonus = player.stats[source.skill] || 0;
+            let bonus = player.stats[source.skill] || 0;
+            if (player.equipment?.armor?.name === 'Nightfall Shroud' && String(source.skill).toLowerCase() === 'dex') {
+                bonus += 1;
+            }
             const total = roll + bonus;
             const outcome = total >= source.dc ? "Success" : "Failure";
     
