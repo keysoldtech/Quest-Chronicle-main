@@ -1,5 +1,5 @@
 /** Client build label — bump with package.json / README. */
-const QC_VERSION = '4.3.10';
+const QC_VERSION = '4.3.11';
 
 /**
  * Verbose client logs (voice, socket, grid, load game, etc.).
@@ -825,11 +825,18 @@ const staticClassData = {
 // --- 2. CORE RENDERING ENGINE ---
 
 /**
- * Checks if the current viewport is considered desktop size.
- * @returns {boolean} True if the window width is 1024px or greater.
+ * Desktop game layout: wide enough for the 3-column grid and tall enough that we do not switch to tabbed (mobile) layout.
+ * Must stay in sync with CSS: (max-width: 1024px) or (max-height: 720px and min-width: 1025px) uses mobile game UI.
  */
 function isDesktop() {
-    return window.innerWidth >= 1024;
+    return window.innerWidth >= 1025 && window.innerHeight >= 721;
+}
+
+/** Lock document scroll while #game-screen is active (fallback when CSS :has() unsupported). */
+function syncGameShellScrollLock() {
+    const on = get('game-screen')?.classList.contains('active');
+    document.documentElement.classList.toggle('qc-game-active', !!on);
+    document.body.classList.toggle('qc-game-active', !!on);
 }
 
 /**
@@ -1011,6 +1018,7 @@ function createCardElement(card, options = {}) {
  * The master rendering function. Wipes and redraws the UI based on the current state.
  */
 function renderUI() {
+    syncGameShellScrollLock();
     if (!currentRoomState || !currentRoomState.id) return;
     const myPlayer = currentRoomState.players[myId];
     if (!myPlayer) {
@@ -6290,6 +6298,7 @@ function initializeMobileActionDropdown() {
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', () => {
     initializeUI();
+    syncGameShellScrollLock();
     // Load sprite manifest early for DPR-aware sprites
     loadSpriteManifest();
     initializeNewFeatures();
