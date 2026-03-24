@@ -58,6 +58,12 @@
     --shadow-md: 0 4px 6px rgba(0,0,0,0.5);
     --shadow-lg: 0 10px 15px rgba(0,0,0,0.6);
 
+    /* Card dimensions — keep row strips one card tall (no vertical scroll in row, horizontal only) */
+    --qc-card-width: 175px;
+    --qc-card-height: 245px;
+    --qc-card-row-padding-y: 1rem;
+    --qc-card-row-height: calc(var(--qc-card-height) + 2 * var(--qc-card-row-padding-y));
+
     --bg-texture: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" stitchTiles="stitch"/></filter><rect width="100" height="100" filter="url(%23n)" opacity="0.1"/></svg>');
     --panel-texture: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 150"><filter id="f"><feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="4" stitchTiles="stitch" result="f" /><feColorMatrix type="saturate" values="0" in="f" result="g" /><feConvolveMatrix order="3 3" kernelMatrix="0 -1 0 -1 5 -1 0 -1 0" in="g" result="h" /><feBlend in="f" in2="h" mode="lighten" /></filter><rect width="150" height="150" filter="url(%23f)" opacity="0.05" /></svg>');
 }
@@ -1178,27 +1184,58 @@ html.qc-game-active {
     gap: 0.35rem;
 }
 .game-area-desktop #game-board-container {
-    flex: 3 1 0;
-    min-height: 180px;
-    overflow: hidden;
+    flex: 0 0 auto;
+    overflow: visible;
 }
+/* One row of cards: height = card + vertical padding on row; scroll X only */
 .game-area-desktop #game-board-container .card-container-row {
-    flex: 1;
-    min-height: 0;
+    flex: 0 0 auto !important;
+    flex-grow: 0 !important;
+    height: var(--qc-card-row-height);
+    min-height: var(--qc-card-row-height);
+    max-height: var(--qc-card-row-height);
     overflow-x: auto;
-    overflow-y: auto;
+    overflow-y: hidden;
+    align-items: center;
+    align-content: center;
     -webkit-overflow-scrolling: touch;
 }
 .game-area-desktop #hand-equipment-container {
-    flex: 2 1 0;
-    min-height: 200px;
-    max-height: none;
-    overflow: hidden;
+    flex: 0 0 auto;
+    overflow: visible;
 }
 .game-area-desktop #hand-equipment-container .hand-and-equipped-container {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    overflow: visible;
+}
+.game-area-desktop #hand-equipment-container .equipped-items-container {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    overflow: visible;
+    border-bottom: 2px solid var(--color-border);
+    padding-bottom: 0.25rem;
+}
+.game-area-desktop #hand-equipment-container .equipped-items-container .sub-header-font {
+    flex-shrink: 0;
+    margin: 0;
+    padding: 0.15rem 0.75rem 0;
+    font-size: 0.85rem;
+}
+.game-area-desktop #hand-equipment-container .equipped-items-container .card-container-row,
+.game-area-desktop #hand-equipment-container .player-hand-container.card-container-row {
+    flex: 0 0 auto !important;
+    flex-grow: 0 !important;
+    height: var(--qc-card-row-height);
+    min-height: var(--qc-card-row-height);
+    max-height: var(--qc-card-row-height);
+    overflow-x: auto;
+    overflow-y: hidden;
+    align-items: center;
     -webkit-overflow-scrolling: touch;
 }
 .info-tabs-panel { 
@@ -1359,7 +1396,7 @@ html.qc-game-active {
 /* --- 9. CARD STYLES --- */
 .card-container-row { display: flex; gap: 1rem; padding: 1rem; overflow-x: auto; flex-grow: 1; }
 .empty-pool-text { padding: 1rem; color: var(--color-text-secondary); text-align: center; width: 100%; font-family: var(--font-title); }
-.card { width: 175px; min-width: 175px; height: 245px; background-color: var(--color-surface-light); border: 2px solid var(--color-border); border-radius: 8px; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; position: relative; transition: all 0.2s; overflow: hidden; background-image: var(--panel-texture); }
+.card { width: var(--qc-card-width); min-width: var(--qc-card-width); height: var(--qc-card-height); min-height: var(--qc-card-height); background-color: var(--color-surface-light); border: 2px solid var(--color-border); border-radius: 8px; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; position: relative; transition: all 0.2s; overflow: hidden; background-image: var(--panel-texture); }
 .card:hover { transform: translateY(-5px) scale(1.02); box-shadow: var(--shadow-lg); }
 .card.targetable { cursor: crosshair; border-color: var(--color-danger); }
 .card.targetable:hover { box-shadow: 0 0 10px var(--color-danger); }

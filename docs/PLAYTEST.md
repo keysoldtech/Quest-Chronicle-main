@@ -1,4 +1,4 @@
-# Playtest checklist (v4.3.12)
+# Playtest checklist (v4.3.13)
 
 Use this for a quick smoke pass before sharing a build.
 
@@ -36,7 +36,8 @@ Use this for a quick smoke pass before sharing a build.
 
 - [ ] **Full window:** On the game screen, the **page** does not scroll (only panels: board, hand, side columns, log).
 - [ ] **Resize:** Shrink window height below ~720px at desktop width → **bottom tab bar** appears (mobile-style); widen/tall again → 3-column desktop returns.
-- [ ] **v4.3.12 desktop:** **Game board** and **hand** are the main vertical space; **combat grid** stays compact at top; **action bar** is one horizontal strip (scroll if needed).
+- [ ] **v4.3.12+ desktop:** **Game board** and **hand** are the main vertical space; **combat grid** stays compact at top; **action bar** is one horizontal strip (scroll if needed).
+- [ ] **v4.3.13:** Board row and hand/equip rows are **one card tall** — **no vertical scrollbar** in those rows; overflow is **horizontal** only.
 
 ## Card / combat (v4.3.10)
 
